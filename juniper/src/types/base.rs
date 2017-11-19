@@ -143,9 +143,10 @@ equivalent of the `User` object as shown in the example in the documentation
 root:
 
 ```rust
-use juniper::{GraphQLType, Registry, FieldResult, Context,
+use juniper::{GraphQLType, Registry, Context,
               Arguments, Executor, ExecutionResult};
 use juniper::meta::MetaType;
+# use std::sync::Arc;
 # use std::collections::HashMap;
 
 struct User { id: String, name: String, friend_ids: Vec<String>  }
@@ -179,8 +180,8 @@ impl GraphQLType for User {
         &self,
         info: &(),
         field_name: &str,
-        args: &Arguments,
-        executor: &Executor<Database>
+        _args: &Arguments,
+        executor: Arc<Executor<Database>>
     )
         -> ExecutionResult
     {
@@ -200,7 +201,9 @@ impl GraphQLType for User {
             // will determine which fields of the sub-objects to actually
             // resolve based on the query. The executor instance keeps track
             // of its current position in the query.
-            "friends" => executor.resolve(info,
+            "friends" => Executor::resolve(
+                executor.clone(),
+                info,
                 &self.friend_ids.iter()
                     .filter_map(|id| database.users.get(id))
                     .collect::<Vec<_>>()
