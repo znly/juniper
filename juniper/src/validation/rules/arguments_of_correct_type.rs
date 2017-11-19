@@ -3,9 +3,10 @@ use schema::meta::Argument;
 use types::utilities::is_valid_literal_value;
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 pub struct ArgumentsOfCorrectType<'a> {
-    current_args: Option<&'a Vec<Argument<'a>>>,
+    current_args: Option<&'a Vec<Argument>>,
 }
 
 pub fn factory<'a>() -> ArgumentsOfCorrectType<'a> {
@@ -19,7 +20,7 @@ impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
         directive: &'a Spanning<Directive>,
     ) {
         self.current_args = ctx.schema
-            .directive_by_name(directive.item.name.item)
+            .directive_by_name(&directive.item.name.item)
             .map(|d| &d.arguments);
     }
 
@@ -29,7 +30,7 @@ impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
 
     fn enter_field(&mut self, ctx: &mut ValidatorContext<'a>, field: &'a Spanning<Field>) {
         self.current_args = ctx.parent_type()
-            .and_then(|t| t.field_by_name(field.item.name.item))
+            .and_then(|t| t.field_by_name(&field.item.name.item))
             .and_then(|f| f.arguments.as_ref());
     }
 
@@ -40,7 +41,7 @@ impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
     fn enter_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        &(ref arg_name, ref arg_value): &'a (Spanning<&'a str>, Spanning<InputValue>),
+        &(ref arg_name, ref arg_value): &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         if let Some(argument_meta) = self.current_args
             .and_then(|args| args.iter().find(|a| a.name == arg_name.item))
@@ -49,7 +50,7 @@ impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
 
             if !is_valid_literal_value(ctx.schema, &meta_type, &arg_value.item) {
                 ctx.report_error(
-                    &error_message(arg_name.item, &format!("{}", argument_meta.arg_type)),
+                    &error_message(&arg_name.item, &format!("{}", argument_meta.arg_type)),
                     &[arg_value.start.clone()],
                 );
             }

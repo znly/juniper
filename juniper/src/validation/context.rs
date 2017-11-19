@@ -6,6 +6,7 @@ use schema::meta::MetaType;
 use schema::model::SchemaType;
 
 use parser::SourcePosition;
+use shared_str::SharedStr;
 
 /// Query validation error
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -16,14 +17,14 @@ pub struct RuleError {
 
 #[doc(hidden)]
 pub struct ValidatorContext<'a> {
-    pub schema: &'a SchemaType<'a>,
+    pub schema: &'a SchemaType,
     errors: Vec<RuleError>,
-    type_stack: Vec<Option<&'a MetaType<'a>>>,
-    type_literal_stack: Vec<Option<Type<'a>>>,
-    input_type_stack: Vec<Option<&'a MetaType<'a>>>,
-    input_type_literal_stack: Vec<Option<Type<'a>>>,
-    parent_type_stack: Vec<Option<&'a MetaType<'a>>>,
-    fragment_names: HashSet<&'a str>,
+    type_stack: Vec<Option<&'a MetaType>>,
+    type_literal_stack: Vec<Option<Type>>,
+    input_type_stack: Vec<Option<&'a MetaType>>,
+    input_type_literal_stack: Vec<Option<Type>>,
+    parent_type_stack: Vec<Option<&'a MetaType>>,
+    fragment_names: HashSet<SharedStr>,
 }
 
 impl RuleError {
@@ -51,7 +52,7 @@ impl RuleError {
 
 impl<'a> ValidatorContext<'a> {
     #[doc(hidden)]
-    pub fn new(schema: &'a SchemaType, document: &Document<'a>) -> ValidatorContext<'a> {
+    pub fn new(schema: &'a SchemaType, document: &Document) -> ValidatorContext<'a> {
         ValidatorContext {
             errors: Vec::new(),
             schema: schema,
@@ -63,7 +64,7 @@ impl<'a> ValidatorContext<'a> {
             fragment_names: document
                 .iter()
                 .filter_map(|def| match *def {
-                    Definition::Fragment(ref frag) => Some(frag.item.name.item),
+                    Definition::Fragment(ref frag) => Some(frag.item.name.item.clone()),
                     _ => None,
                 })
                 .collect(),
@@ -87,7 +88,7 @@ impl<'a> ValidatorContext<'a> {
     }
 
     #[doc(hidden)]
-    pub fn with_pushed_type<F, R>(&mut self, t: Option<&Type<'a>>, f: F) -> R
+    pub fn with_pushed_type<F, R>(&mut self, t: Option<&Type>, f: F) -> R
     where
         F: FnOnce(&mut ValidatorContext<'a>) -> R,
     {
@@ -122,7 +123,7 @@ impl<'a> ValidatorContext<'a> {
     }
 
     #[doc(hidden)]
-    pub fn with_pushed_input_type<F, R>(&mut self, t: Option<&Type<'a>>, f: F) -> R
+    pub fn with_pushed_input_type<F, R>(&mut self, t: Option<&Type>, f: F) -> R
     where
         F: FnOnce(&mut ValidatorContext<'a>) -> R,
     {
@@ -144,12 +145,12 @@ impl<'a> ValidatorContext<'a> {
     }
 
     #[doc(hidden)]
-    pub fn current_type(&self) -> Option<&'a MetaType<'a>> {
+    pub fn current_type(&self) -> Option<&'a MetaType> {
         *self.type_stack.last().unwrap_or(&None)
     }
 
     #[doc(hidden)]
-    pub fn current_type_literal(&self) -> Option<&Type<'a>> {
+    pub fn current_type_literal(&self) -> Option<&Type> {
         match self.type_literal_stack.last() {
             Some(&Some(ref t)) => Some(t),
             _ => None,
@@ -157,12 +158,12 @@ impl<'a> ValidatorContext<'a> {
     }
 
     #[doc(hidden)]
-    pub fn parent_type(&self) -> Option<&'a MetaType<'a>> {
+    pub fn parent_type(&self) -> Option<&'a MetaType> {
         *self.parent_type_stack.last().unwrap_or(&None)
     }
 
     #[doc(hidden)]
-    pub fn current_input_type_literal(&self) -> Option<&Type<'a>> {
+    pub fn current_input_type_literal(&self) -> Option<&Type> {
         match self.input_type_literal_stack.last() {
             Some(&Some(ref t)) => Some(t),
             _ => None,

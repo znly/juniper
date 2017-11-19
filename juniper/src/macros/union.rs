@@ -115,7 +115,7 @@ macro_rules! graphql_union {
 
             #[allow(unused_assignments)]
             #[allow(unused_mut)]
-            fn meta<'r>(_: &(), registry: &mut $crate::Registry<'r>) -> $crate::meta::MetaType<'r> {
+            fn meta(_: &(), registry: &mut $crate::Registry) -> $crate::meta::MetaType {
                 let mut types;
                 let mut description = None;
                 graphql_union!(@ gather_meta, (registry, types, description), $($items)*);

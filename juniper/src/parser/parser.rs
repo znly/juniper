@@ -2,12 +2,13 @@ use std::result::Result;
 use std::fmt;
 
 use parser::{Lexer, LexerError, Spanning, Token};
+use shared_str::SharedStr;
 
 /// Error while parsing a GraphQL query
 #[derive(Debug, PartialEq)]
-pub enum ParseError<'a> {
+pub enum ParseError {
     /// An unexpected token occurred in the source
-    UnexpectedToken(Token<'a>),
+    UnexpectedToken(Token),
 
     /// The input source abruptly ended
     UnexpectedEndOfFile,
@@ -17,23 +18,23 @@ pub enum ParseError<'a> {
 }
 
 #[doc(hidden)]
-pub type ParseResult<'a, T> = Result<Spanning<T>, Spanning<ParseError<'a>>>;
+pub type ParseResult<T> = Result<Spanning<T>, Spanning<ParseError>>;
 
 #[doc(hidden)]
-pub type UnlocatedParseResult<'a, T> = Result<T, Spanning<ParseError<'a>>>;
+pub type UnlocatedParseResult<T> = Result<T, Spanning<ParseError>>;
 
 #[doc(hidden)]
-pub type OptionParseResult<'a, T> = Result<Option<Spanning<T>>, Spanning<ParseError<'a>>>;
+pub type OptionParseResult<T> = Result<Option<Spanning<T>>, Spanning<ParseError>>;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct Parser<'a> {
-    tokens: Vec<Spanning<Token<'a>>>,
+pub struct Parser {
+    tokens: Vec<Spanning<Token>>,
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     #[doc(hidden)]
-    pub fn new(lexer: &mut Lexer<'a>) -> Result<Parser<'a>, Spanning<LexerError>> {
+    pub fn new(lexer: &mut Lexer) -> Result<Parser, Spanning<LexerError>> {
         let mut tokens = Vec::new();
 
         for res in lexer {
@@ -47,12 +48,12 @@ impl<'a> Parser<'a> {
     }
 
     #[doc(hidden)]
-    pub fn peek(&self) -> &Spanning<Token<'a>> {
+    pub fn peek(&self) -> &Spanning<Token> {
         &self.tokens[0]
     }
 
     #[doc(hidden)]
-    pub fn next(&mut self) -> ParseResult<'a, Token<'a>> {
+    pub fn next(&mut self) -> ParseResult<Token> {
         if self.tokens.len() == 1 {
             Err(Spanning::start_end(
                 &self.peek().start.clone(),
@@ -65,7 +66,7 @@ impl<'a> Parser<'a> {
     }
 
     #[doc(hidden)]
-    pub fn expect(&mut self, expected: &Token) -> ParseResult<'a, Token<'a>> {
+    pub fn expect(&mut self, expected: &Token) -> ParseResult<Token> {
         if &self.peek().item != expected {
             Err(self.next()?.map(ParseError::UnexpectedToken))
         } else {
@@ -77,7 +78,7 @@ impl<'a> Parser<'a> {
     pub fn skip(
         &mut self,
         expected: &Token,
-    ) -> Result<Option<Spanning<Token<'a>>>, Spanning<ParseError<'a>>> {
+    ) -> Result<Option<Spanning<Token>>, Spanning<ParseError>> {
         if &self.peek().item == expected {
             Ok(Some(self.next()?))
         } else if self.peek().item == Token::EndOfFile {
@@ -96,10 +97,10 @@ impl<'a> Parser<'a> {
         opening: &Token,
         parser: F,
         closing: &Token,
-    ) -> ParseResult<'a, Vec<Spanning<T>>>
+    ) -> ParseResult<Vec<Spanning<T>>>
     where
         T: fmt::Debug,
-        F: Fn(&mut Parser<'a>) -> ParseResult<'a, T>,
+        F: Fn(&mut Parser) -> ParseResult<T>,
     {
         let Spanning {
             start: start_pos, ..
@@ -121,10 +122,10 @@ impl<'a> Parser<'a> {
         opening: &Token,
         parser: F,
         closing: &Token,
-    ) -> ParseResult<'a, Vec<Spanning<T>>>
+    ) -> ParseResult<Vec<Spanning<T>>>
     where
         T: fmt::Debug,
-        F: Fn(&mut Parser<'a>) -> ParseResult<'a, T>,
+        F: Fn(&mut Parser) -> ParseResult<T>,
     {
         let Spanning {
             start: start_pos, ..
@@ -146,10 +147,10 @@ impl<'a> Parser<'a> {
         opening: &Token,
         parser: F,
         closing: &Token,
-    ) -> ParseResult<'a, Vec<T>>
+    ) -> ParseResult<Vec<T>>
     where
         T: fmt::Debug,
-        F: Fn(&mut Parser<'a>) -> UnlocatedParseResult<'a, T>,
+        F: Fn(&mut Parser) -> UnlocatedParseResult<T>,
     {
         let Spanning {
             start: start_pos, ..
@@ -166,7 +167,7 @@ impl<'a> Parser<'a> {
     }
 
     #[doc(hidden)]
-    pub fn expect_name(&mut self) -> ParseResult<'a, &'a str> {
+    pub fn expect_name(&mut self) -> ParseResult<SharedStr> {
         match *self.peek() {
             Spanning {
                 item: Token::Name(_),
@@ -189,7 +190,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> fmt::Display for ParseError<'a> {
+impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ParseError::UnexpectedToken(ref token) => write!(f, "Unexpected \"{}\"", token),

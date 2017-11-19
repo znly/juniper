@@ -16,7 +16,7 @@ where
         None
     }
 
-    fn meta<'r>(info: &T::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &T::TypeInfo, registry: &mut Registry) -> MetaType {
         registry.build_nullable_type::<T>(info).into_meta()
     }
 
@@ -71,7 +71,7 @@ where
         None
     }
 
-    fn meta<'r>(info: &T::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &T::TypeInfo, registry: &mut Registry) -> MetaType {
         registry.build_list_type::<T>(info).into_meta()
     }
 
@@ -133,7 +133,7 @@ where
         None
     }
 
-    fn meta<'r>(info: &T::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &T::TypeInfo, registry: &mut Registry) -> MetaType {
         registry.build_list_type::<T>(info).into_meta()
     }
 

@@ -16,8 +16,8 @@ struct ConflictReason(String, ConflictReasonMessage);
 #[derive(Debug)]
 struct AstAndDef<'a>(
     Option<&'a str>,
-    &'a Spanning<Field<'a>>,
-    Option<&'a FieldType<'a>>,
+    &'a Spanning<Field>,
+    Option<&'a FieldType>,
 );
 
 type AstAndDefCollection<'a> = OrderedMap<&'a str, Vec<AstAndDef<'a>>>;
@@ -133,7 +133,7 @@ impl<'a> PairSet<'a> {
 }
 
 pub struct OverlappingFieldsCanBeMerged<'a> {
-    named_fragments: HashMap<&'a str, &'a Fragment<'a>>,
+    named_fragments: HashMap<&'a str, &'a Fragment>,
     compared_fragments: RefCell<PairSet<'a>>,
 }
 
@@ -512,8 +512,8 @@ impl<'a> OverlappingFieldsCanBeMerged<'a> {
             }
             (&Type::NonNullNamed(ref n1), &Type::NonNullNamed(ref n2)) |
             (&Type::Named(ref n1), &Type::Named(ref n2)) => {
-                let ct1 = ctx.schema.concrete_type_by_name(n1);
-                let ct2 = ctx.schema.concrete_type_by_name(n2);
+                let ct1 = ctx.schema.concrete_type_by_name(n1.as_str());
+                let ct2 = ctx.schema.concrete_type_by_name(n2.as_str());
 
                 if ct1.map(|ct| ct.is_leaf()).unwrap_or(false) ||
                     ct2.map(|ct| ct.is_leaf()).unwrap_or(false)
@@ -573,7 +573,7 @@ impl<'a> OverlappingFieldsCanBeMerged<'a> {
         ctx: &ValidatorContext<'a>,
     ) -> (AstAndDefCollection<'a>, Vec<&'a str>) {
         let fragment_type = ctx.schema
-            .concrete_type_by_name(fragment.type_condition.item);
+            .concrete_type_by_name(&fragment.type_condition.item);
 
         self.get_fields_and_fragment_names(fragment_type, &fragment.selection_set, ctx)
     }
@@ -614,11 +614,11 @@ impl<'a> OverlappingFieldsCanBeMerged<'a> {
                     let response_name =
                         f.item.alias.as_ref().map(|s| &s.item).unwrap_or(field_name);
 
-                    if !ast_and_defs.contains_key(response_name) {
+                    if !ast_and_defs.contains_key(response_name.as_str()) {
                         ast_and_defs.insert(response_name, Vec::new());
                     }
 
-                    ast_and_defs.get_mut(response_name).unwrap().push(AstAndDef(
+                    ast_and_defs.get_mut(response_name.as_str()).unwrap().push(AstAndDef(
                         parent_type.and_then(MetaType::name),
                         f,
                         field_def,
@@ -628,7 +628,7 @@ impl<'a> OverlappingFieldsCanBeMerged<'a> {
                     item: FragmentSpread { ref name, .. },
                     ..
                 }) => if fragment_names.iter().find(|n| *n == &name.item).is_none() {
-                    fragment_names.push(name.item);
+                    fragment_names.push(&name.item);
                 },
                 Selection::InlineFragment(Spanning {
                     item: ref inline, ..
@@ -636,7 +636,7 @@ impl<'a> OverlappingFieldsCanBeMerged<'a> {
                     let parent_type = inline
                         .type_condition
                         .as_ref()
-                        .and_then(|cond| ctx.schema.concrete_type_by_name(cond.item))
+                        .and_then(|cond| ctx.schema.concrete_type_by_name(&cond.item))
                         .or(parent_type);
 
                     self.collect_fields_and_fragment_names(
@@ -656,7 +656,7 @@ impl<'a> Visitor<'a> for OverlappingFieldsCanBeMerged<'a> {
     fn enter_document(&mut self, _: &mut ValidatorContext<'a>, defs: &'a Document) {
         for def in defs {
             if let Definition::Fragment(Spanning { ref item, .. }) = *def {
-                self.named_fragments.insert(item.name.item, item);
+                self.named_fragments.insert(&item.name.item, item);
             }
         }
     }
@@ -1363,7 +1363,7 @@ mod tests {
             Some("SomeBox")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<Option<SomeBox>>("deepBox", i),
                 registry.field::<Option<String>>("unrelatedField", i),
@@ -1381,7 +1381,7 @@ mod tests {
             Some("StringBox")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<Option<String>>("scalar", i),
                 registry.field::<Option<StringBox>>("deepBox", i),
@@ -1406,7 +1406,7 @@ mod tests {
             Some("IntBox")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<Option<i32>>("scalar", i),
                 registry.field::<Option<IntBox>>("deepBox", i),
@@ -1431,7 +1431,7 @@ mod tests {
             Some("NonNullStringBox1")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[registry.field::<String>("scalar", i)];
 
             registry.build_interface_type::<Self>(i, fields).into_meta()
@@ -1446,7 +1446,7 @@ mod tests {
             Some("NonNullStringBox1Impl")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<String>("scalar", i),
                 registry.field::<Option<SomeBox>>("deepBox", i),
@@ -1471,7 +1471,7 @@ mod tests {
             Some("NonNullStringBox2")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[registry.field::<String>("scalar", i)];
 
             registry.build_interface_type::<Self>(i, fields).into_meta()
@@ -1486,7 +1486,7 @@ mod tests {
             Some("NonNullStringBox2Impl")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<String>("scalar", i),
                 registry.field::<Option<SomeBox>>("deepBox", i),
@@ -1511,7 +1511,7 @@ mod tests {
             Some("Node")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[
                 registry.field::<Option<ID>>("id", i),
                 registry.field::<Option<String>>("name", i),
@@ -1529,7 +1529,7 @@ mod tests {
             Some("Edge")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[registry.field::<Option<Node>>("node", i)];
 
             registry.build_object_type::<Self>(i, fields).into_meta()
@@ -1544,7 +1544,7 @@ mod tests {
             Some("Connection")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             let fields = &[registry.field::<Option<Vec<Option<Edge>>>>("edges", i)];
 
             registry.build_object_type::<Self>(i, fields).into_meta()
@@ -1559,7 +1559,7 @@ mod tests {
             Some("QueryRoot")
         }
 
-        fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+        fn meta(i: &(), registry: &mut Registry) -> MetaType {
             registry.get_type::<IntBox>(i);
             registry.get_type::<StringBox>(i);
             registry.get_type::<NonNullStringBox1Impl>(i);

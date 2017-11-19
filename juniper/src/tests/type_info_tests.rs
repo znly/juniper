@@ -24,7 +24,7 @@ impl GraphQLType for Node {
         Some(&info.name)
     }
 
-    fn meta<'r>(info: &Self::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &Self::TypeInfo, registry: &mut Registry) -> MetaType {
         let fields = info.attribute_names
             .iter()
             .map(|name| registry.field::<String>(name, &()))

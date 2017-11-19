@@ -2,6 +2,7 @@ use ast::VariableDefinition;
 use types::utilities::is_valid_literal_value;
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 pub struct DefaultValuesOfCorrectType {}
 
@@ -13,7 +14,7 @@ impl<'a> Visitor<'a> for DefaultValuesOfCorrectType {
     fn enter_variable_definition(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        &(ref var_name, ref var_def): &'a (Spanning<&'a str>, VariableDefinition),
+        &(ref var_name, ref var_def): &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         if let Some(Spanning {
             item: ref var_value,
@@ -23,7 +24,7 @@ impl<'a> Visitor<'a> for DefaultValuesOfCorrectType {
         {
             if var_def.var_type.item.is_non_null() {
                 ctx.report_error(
-                    &non_null_error_message(var_name.item, &format!("{}", var_def.var_type.item)),
+                    &non_null_error_message(&var_name.item, &format!("{}", var_def.var_type.item)),
                     &[start.clone()],
                 )
             } else {
@@ -31,7 +32,7 @@ impl<'a> Visitor<'a> for DefaultValuesOfCorrectType {
 
                 if !is_valid_literal_value(ctx.schema, &meta_type, var_value) {
                     ctx.report_error(
-                        &type_error_message(var_name.item, &format!("{}", var_def.var_type.item)),
+                        &type_error_message(&var_name.item, &format!("{}", var_def.var_type.item)),
                         &[start.clone()],
                     );
                 }

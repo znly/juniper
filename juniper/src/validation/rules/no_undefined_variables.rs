@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use ast::{Document, Fragment, FragmentSpread, InputValue, Operation, VariableDefinition};
 use validation::{RuleError, ValidatorContext, Visitor};
 use parser::{SourcePosition, Spanning};
+use shared_str::SharedStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Scope<'a> {
@@ -86,7 +87,7 @@ impl<'a> Visitor<'a> for NoUndefinedVariables<'a> {
         _: &mut ValidatorContext<'a>,
         op: &'a Spanning<Operation>,
     ) {
-        let op_name = op.item.name.as_ref().map(|s| s.item);
+        let op_name = op.item.name.as_ref().map(|s| s.item.as_str());
         self.current_scope = Some(Scope::Operation(op_name));
         self.defined_variables
             .insert(op_name, (op.start.clone(), HashSet::new()));
@@ -97,7 +98,7 @@ impl<'a> Visitor<'a> for NoUndefinedVariables<'a> {
         _: &mut ValidatorContext<'a>,
         f: &'a Spanning<Fragment>,
     ) {
-        self.current_scope = Some(Scope::Fragment(f.item.name.item));
+        self.current_scope = Some(Scope::Fragment(&f.item.name.item));
     }
 
     fn enter_fragment_spread(
@@ -109,18 +110,18 @@ impl<'a> Visitor<'a> for NoUndefinedVariables<'a> {
             self.spreads
                 .entry(scope.clone())
                 .or_insert_with(Vec::new)
-                .push(spread.item.name.item);
+                .push(&spread.item.name.item);
         }
     }
 
     fn enter_variable_definition(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        &(ref var_name, _): &'a (Spanning<&'a str>, VariableDefinition),
+        &(ref var_name, _): &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         if let Some(Scope::Operation(ref name)) = self.current_scope {
             if let Some(&mut (_, ref mut vars)) = self.defined_variables.get_mut(name) {
-                vars.insert(var_name.item);
+                vars.insert(&var_name.item);
             }
         }
     }
@@ -128,7 +129,7 @@ impl<'a> Visitor<'a> for NoUndefinedVariables<'a> {
     fn enter_argument(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        &(_, ref value): &'a (Spanning<&'a str>, Spanning<InputValue>),
+        &(_, ref value): &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         if let Some(ref scope) = self.current_scope {
             self.used_variables

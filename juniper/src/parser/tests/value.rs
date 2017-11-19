@@ -3,10 +3,12 @@ use ordermap::OrderMap;
 use ast::InputValue;
 use parser::{Lexer, Parser, SourcePosition, Spanning};
 use parser::value::parse_value_literal;
-
+use shared_str::SharedStr;
 
 fn parse_value(s: &str) -> Spanning<InputValue> {
-    let mut lexer = Lexer::new(s);
+    let source = SharedStr::clone_from_str(s);
+    let mut char_indices = s.char_indices().peekable();
+    let mut lexer = Lexer::new(source, &mut char_indices);
     let mut parser = Parser::new(&mut lexer).expect(&format!("Lexer error on input {:#?}", s));
 
     parse_value_literal(&mut parser, false).expect(&format!("Parse error on input {:#?}", s))

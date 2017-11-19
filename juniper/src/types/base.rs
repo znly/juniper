@@ -8,6 +8,7 @@ use value::Value;
 use schema::meta::{Argument, MetaType};
 use executor::{ExecutionResult, Executor, Registry};
 use parser::Spanning;
+use shared_str::SharedStr;
 
 /// GraphQL type kind
 ///
@@ -65,16 +66,16 @@ pub enum TypeKind {
 }
 
 /// Field argument container
-pub struct Arguments<'a> {
-    args: Option<OrderMap<&'a str, InputValue>>,
+pub struct Arguments {
+    args: Option<OrderMap<SharedStr, InputValue>>,
 }
 
-impl<'a> Arguments<'a> {
+impl Arguments {
     #[doc(hidden)]
     pub fn new(
-        mut args: Option<OrderMap<&'a str, InputValue>>,
-        meta_args: &'a Option<Vec<Argument>>,
-    ) -> Arguments<'a> {
+        mut args: Option<OrderMap<SharedStr, InputValue>>,
+        meta_args: &Option<Vec<Argument>>,
+    ) -> Arguments {
         if meta_args.is_some() && args.is_none() {
             args = Some(OrderMap::new());
         }
@@ -83,9 +84,9 @@ impl<'a> Arguments<'a> {
             for arg in meta_args {
                 if !args.contains_key(arg.name.as_str()) || args[arg.name.as_str()].is_null() {
                     if let Some(ref default_value) = arg.default_value {
-                        args.insert(arg.name.as_str(), default_value.clone());
+                        args.insert(SharedStr::clone_from_str(&arg.name), default_value.clone());
                     } else {
-                        args.insert(arg.name.as_str(), InputValue::null());
+                        args.insert(SharedStr::clone_from_str(&arg.name), InputValue::null());
                     }
                 }
             }
@@ -158,7 +159,7 @@ impl GraphQLType for User {
         Some("User")
     }
 
-    fn meta<'r>(_: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(_: &(), registry: &mut Registry) -> MetaType {
         // First, we need to define all fields and their types on this type.
         //
         // If we need arguments, want to implement interfaces, or want to add
@@ -239,7 +240,7 @@ pub trait GraphQLType: Sized {
     fn name(info: &Self::TypeInfo) -> Option<&str>;
 
     /// The meta type representing this GraphQL type.
-    fn meta<'r>(info: &Self::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r>;
+    fn meta(info: &Self::TypeInfo, registry: &mut Registry) -> MetaType;
 
     /// Resolve the value of a single field on this type.
     ///
@@ -351,13 +352,13 @@ fn resolve_selection_set_into<T, CtxT>(
 
                 if f.name.item == "__typename" {
                     result.insert(
-                        (*response_name).to_owned(),
+                        response_name.to_string(),
                         Value::string(instance.concrete_type_name(executor.context())),
                     );
                     continue;
                 }
 
-                let meta_field = meta_type.field_by_name(f.name.item).unwrap_or_else(|| {
+                let meta_field = meta_type.field_by_name(&f.name.item).unwrap_or_else(|| {
                     panic!(format!(
                         "Field {} not found on type {:?}",
                         f.name.item,
@@ -368,20 +369,20 @@ fn resolve_selection_set_into<T, CtxT>(
                 let exec_vars = executor.variables();
 
                 let sub_exec = executor.sub_executor(
-                    Some(response_name),
+                    Some(response_name.clone()),
                     start_pos.clone(),
                     f.selection_set.as_ref().map(|v| &v[..]),
                 );
 
                 let field_result = instance.resolve_field(
                     info,
-                    f.name.item,
+                    &f.name.item,
                     &Arguments::new(
                         f.arguments.as_ref().map(|m| {
                             m.item
                                 .iter()
                                 .map(|&(ref k, ref v)| {
-                                    (k.item, v.item.clone().into_const(exec_vars))
+                                    (k.item.clone(), v.item.clone().into_const(exec_vars))
                                 })
                                 .collect()
                         }),
@@ -400,7 +401,7 @@ fn resolve_selection_set_into<T, CtxT>(
                             return false;
                         }
 
-                        result.insert((*response_name).to_owned(), Value::null());
+                        result.insert(response_name.to_string(), Value::null());
                     }
                 }
             }
@@ -412,7 +413,7 @@ fn resolve_selection_set_into<T, CtxT>(
                 }
 
                 let fragment = &executor
-                    .fragment_by_name(spread.name.item)
+                    .fragment_by_name(&spread.name.item)
                     .expect("Fragment could not be found");
 
                 if !resolve_selection_set_into(
@@ -440,7 +441,7 @@ fn resolve_selection_set_into<T, CtxT>(
                 if let Some(ref type_condition) = fragment.type_condition {
                     let sub_result = instance.resolve_into_type(
                         info,
-                        type_condition.item,
+                        &type_condition.item,
                         Some(&fragment.selection_set[..]),
                         &sub_exec,
                     );

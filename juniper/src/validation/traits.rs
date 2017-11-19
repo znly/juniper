@@ -2,6 +2,7 @@ use ast::{Directive, Document, Field, Fragment, FragmentSpread, InlineFragment, 
           Operation, Selection, VariableDefinition};
 use parser::Spanning;
 use validation::ValidatorContext;
+use shared_str::SharedStr;
 
 
 #[doc(hidden)]
@@ -38,13 +39,13 @@ pub trait Visitor<'a> {
     fn enter_variable_definition(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        _: &'a (Spanning<&'a str>, VariableDefinition),
+        _: &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
     }
     fn exit_variable_definition(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        _: &'a (Spanning<&'a str>, VariableDefinition),
+        _: &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
     }
 
@@ -54,13 +55,13 @@ pub trait Visitor<'a> {
     fn enter_argument(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        _: &'a (Spanning<&'a str>, Spanning<InputValue>),
+        _: &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
     }
     fn exit_argument(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        _: &'a (Spanning<&'a str>, Spanning<InputValue>),
+        _: &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
     }
 

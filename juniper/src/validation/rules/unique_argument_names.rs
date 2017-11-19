@@ -3,6 +3,7 @@ use std::collections::hash_map::{Entry, HashMap};
 use ast::{Directive, Field, InputValue};
 use validation::{ValidatorContext, Visitor};
 use parser::{SourcePosition, Spanning};
+use shared_str::SharedStr;
 
 pub struct UniqueArgumentNames<'a> {
     known_names: HashMap<&'a str, SourcePosition>,
@@ -26,12 +27,12 @@ impl<'a> Visitor<'a> for UniqueArgumentNames<'a> {
     fn enter_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        &(ref arg_name, _): &'a (Spanning<&'a str>, Spanning<InputValue>),
+        &(ref arg_name, _): &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
-        match self.known_names.entry(arg_name.item) {
+        match self.known_names.entry(arg_name.item.as_str()) {
             Entry::Occupied(e) => {
                 ctx.report_error(
-                    &error_message(arg_name.item),
+                    &error_message(&arg_name.item),
                     &[e.get().clone(), arg_name.start.clone()],
                 );
             }

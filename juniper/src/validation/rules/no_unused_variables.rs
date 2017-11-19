@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use ast::{Document, Fragment, FragmentSpread, InputValue, Operation, VariableDefinition};
 use validation::{RuleError, ValidatorContext, Visitor};
 use parser::Spanning;
+use shared_str::SharedStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Scope<'a> {
@@ -10,7 +11,7 @@ pub enum Scope<'a> {
 }
 
 pub struct NoUnusedVariables<'a> {
-    defined_variables: HashMap<Option<&'a str>, HashSet<&'a Spanning<&'a str>>>,
+    defined_variables: HashMap<Option<&'a str>, HashSet<&'a Spanning<SharedStr>>>,
     used_variables: HashMap<Scope<'a>, Vec<&'a str>>,
     current_scope: Option<Scope<'a>>,
     spreads: HashMap<Scope<'a>, Vec<&'a str>>,
@@ -62,7 +63,7 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
             let mut visited = HashSet::new();
             self.find_used_vars(
                 &Scope::Operation(*op_name),
-                &def_vars.iter().map(|def| def.item).collect(),
+                &def_vars.iter().map(|def| def.item.as_str()).collect(),
                 &mut used,
                 &mut visited,
             );
@@ -70,9 +71,9 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
             ctx.append_errors(
                 def_vars
                     .iter()
-                    .filter(|var| !used.contains(var.item))
+                    .filter(|var| !used.contains(var.item.as_str()))
                     .map(|var| {
-                        RuleError::new(&error_message(var.item, *op_name), &[var.start.clone()])
+                        RuleError::new(&error_message(&var.item, *op_name), &[var.start.clone()])
                     })
                     .collect(),
             );
@@ -84,7 +85,7 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
         _: &mut ValidatorContext<'a>,
         op: &'a Spanning<Operation>,
     ) {
-        let op_name = op.item.name.as_ref().map(|s| s.item);
+        let op_name = op.item.name.as_ref().map(|s| s.item.as_str());
         self.current_scope = Some(Scope::Operation(op_name));
         self.defined_variables.insert(op_name, HashSet::new());
     }
@@ -94,7 +95,7 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
         _: &mut ValidatorContext<'a>,
         f: &'a Spanning<Fragment>,
     ) {
-        self.current_scope = Some(Scope::Fragment(f.item.name.item));
+        self.current_scope = Some(Scope::Fragment(&f.item.name.item));
     }
 
     fn enter_fragment_spread(
@@ -106,14 +107,14 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
             self.spreads
                 .entry(scope.clone())
                 .or_insert_with(Vec::new)
-                .push(spread.item.name.item);
+                .push(&spread.item.name.item);
         }
     }
 
     fn enter_variable_definition(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        &(ref var_name, _): &'a (Spanning<&'a str>, VariableDefinition),
+        &(ref var_name, _): &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         if let Some(Scope::Operation(ref name)) = self.current_scope {
             if let Some(vars) = self.defined_variables.get_mut(name) {
@@ -125,7 +126,7 @@ impl<'a> Visitor<'a> for NoUnusedVariables<'a> {
     fn enter_argument(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        &(_, ref value): &'a (Spanning<&'a str>, Spanning<InputValue>),
+        &(_, ref value): &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         if let Some(ref scope) = self.current_scope {
             self.used_variables

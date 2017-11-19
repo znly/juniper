@@ -63,7 +63,7 @@ impl<'a> Visitor<'a> for NoFragmentCycles<'a> {
         _: &mut ValidatorContext<'a>,
         fragment: &'a Spanning<Fragment>,
     ) {
-        assert_eq!(Some(fragment.item.name.item), self.current_fragment);
+        assert_eq!(Some(fragment.item.name.item.as_str()), self.current_fragment);
         self.current_fragment = None;
     }
 
@@ -79,7 +79,7 @@ impl<'a> Visitor<'a> for NoFragmentCycles<'a> {
                 .push(Spanning::start_end(
                     &spread.start.clone(),
                     &spread.end.clone(),
-                    spread.item.name.item,
+                    &spread.item.name.item,
                 ));
         }
     }

@@ -1,11 +1,10 @@
-use std::borrow::Cow;
-
 use ast::{Arguments, Definition, Directive, Document, Field, Fragment, FragmentSpread,
           InlineFragment, InputValue, Operation, OperationType, Selection, Type,
           VariableDefinitions};
 use schema::meta::Argument;
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 #[doc(hidden)]
 pub fn visit<'a, V: Visitor<'a>>(v: &mut V, ctx: &mut ValidatorContext<'a>, d: &'a Document) {
@@ -23,18 +22,18 @@ fn visit_definitions<'a, V: Visitor<'a>>(
         let def_type = match *def {
             Definition::Fragment(Spanning {
                 item: Fragment {
-                    type_condition: Spanning { item: name, .. },
+                    type_condition: Spanning { item: ref name, .. },
                     ..
                 },
                 ..
-            }) => Some(Type::NonNullNamed(Cow::Borrowed(name))),
+            }) => Some(Type::NonNullNamed(name.clone())),
             Definition::Operation(Spanning {
                 item: Operation {
                     operation_type: OperationType::Query,
                     ..
                 },
                 ..
-            }) => Some(Type::NonNullNamed(Cow::Borrowed(
+            }) => Some(Type::NonNullNamed(SharedStr::clone_from_str(
                 ctx.schema.concrete_query_type().name().unwrap(),
             ))),
             Definition::Operation(Spanning {
@@ -45,7 +44,7 @@ fn visit_definitions<'a, V: Visitor<'a>>(
                 ..
             }) => ctx.schema
                 .concrete_mutation_type()
-                .map(|t| Type::NonNullNamed(Cow::Borrowed(t.name().unwrap()))),
+                .map(|t| Type::NonNullNamed(SharedStr::clone_from_str(t.name().unwrap()))),
         };
 
         ctx.with_pushed_type(def_type.as_ref(), |ctx| {
@@ -126,7 +125,7 @@ fn visit_directives<'a, V: Visitor<'a>>(
     if let Some(ref directives) = *directives {
         for directive in directives {
             let directive_arguments = ctx.schema
-                .directive_by_name(directive.item.name.item)
+                .directive_by_name(&directive.item.name.item)
                 .map(|d| &d.arguments);
 
             v.enter_directive(ctx, directive);
@@ -139,7 +138,7 @@ fn visit_directives<'a, V: Visitor<'a>>(
 fn visit_arguments<'a, V: Visitor<'a>>(
     v: &mut V,
     ctx: &mut ValidatorContext<'a>,
-    meta_args: &Option<&Vec<Argument<'a>>>,
+    meta_args: &Option<&Vec<Argument>>,
     arguments: &'a Option<Spanning<Arguments>>,
 ) {
     if let Some(ref arguments) = *arguments {
@@ -193,7 +192,7 @@ fn visit_field<'a, V: Visitor<'a>>(
     field: &'a Spanning<Field>,
 ) {
     let meta_field = ctx.parent_type()
-        .and_then(|t| t.field_by_name(field.item.name.item));
+        .and_then(|t| t.field_by_name(&field.item.name.item));
 
     let field_type = meta_field.map(|f| &f.field_type);
     let field_args = meta_field.and_then(|f| f.arguments.as_ref());
@@ -239,11 +238,11 @@ fn visit_inline_fragment<'a, V: Visitor<'a>>(
     };
 
     if let Some(Spanning {
-        item: type_name, ..
+        item: ref type_name, ..
     }) = fragment.item.type_condition
     {
         ctx.with_pushed_type(
-            Some(&Type::NonNullNamed(Cow::Borrowed(type_name))),
+            Some(&Type::NonNullNamed(type_name.clone())),
             visit_fn,
         );
     } else {

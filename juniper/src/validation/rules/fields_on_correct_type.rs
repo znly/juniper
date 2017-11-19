@@ -15,9 +15,9 @@ impl<'a> Visitor<'a> for FieldsOnCorrectType {
                 let field_name = &field.item.name;
                 let type_name = parent_type.name().unwrap_or("<unknown>");
 
-                if parent_type.field_by_name(field_name.item).is_none() {
+                if parent_type.field_by_name(&field_name.item).is_none() {
                     context.report_error(
-                        &error_message(field_name.item, type_name),
+                        &error_message(&field_name.item, type_name),
                         &[field_name.start.clone()],
                     );
                 }

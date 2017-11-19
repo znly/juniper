@@ -1,6 +1,7 @@
 use ast::VariableDefinition;
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 pub struct UniqueVariableNames {}
 
@@ -12,14 +13,14 @@ impl<'a> Visitor<'a> for UniqueVariableNames {
     fn enter_variable_definition(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        &(ref var_name, ref var_def): &'a (Spanning<&'a str>, VariableDefinition),
+        &(ref var_name, ref var_def): &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         if let Some(var_type) = ctx.schema
             .concrete_type_by_name(var_def.var_type.item.innermost_name())
         {
             if !var_type.is_input() {
                 ctx.report_error(
-                    &error_message(var_name.item, &format!("{}", var_def.var_type.item)),
+                    &error_message(&var_name.item, &format!("{}", var_def.var_type.item)),
                     &[var_def.var_type.start.clone()],
                 );
             }

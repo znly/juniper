@@ -138,6 +138,7 @@ extern crate uuid;
 
 use std::borrow::Cow;
 
+mod shared_str;
 #[macro_use]
 mod value;
 #[macro_use]
@@ -183,8 +184,8 @@ pub use schema::meta;
 /// An error that prevented query execution
 #[derive(Debug, PartialEq)]
 #[allow(missing_docs)]
-pub enum GraphQLError<'a> {
-    ParseError(Spanning<ParseError<'a>>),
+pub enum GraphQLError {
+    ParseError(Spanning<ParseError>),
     ValidationError(Vec<RuleError>),
     NoOperationProvided,
     MultipleOperationsProvided,
@@ -198,12 +199,13 @@ pub fn execute<'a, CtxT, QueryT, MutationT>(
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
     context: &CtxT,
-) -> Result<(Value, Vec<ExecutionError>), GraphQLError<'a>>
+) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
 where
     QueryT: GraphQLType<Context = CtxT>,
     MutationT: GraphQLType<Context = CtxT>,
 {
-    let document = try!(parse_document_source(document_source));
+    let source = shared_str::SharedStr::clone_from_str(document_source);
+    let document = try!(parse_document_source(source));
 
     {
         let errors = validate_input_values(variables, &document, &root_node.schema);
@@ -226,8 +228,8 @@ where
     execute_validated_query(document, operation_name, root_node, variables, context)
 }
 
-impl<'a> From<Spanning<ParseError<'a>>> for GraphQLError<'a> {
-    fn from(f: Spanning<ParseError<'a>>) -> GraphQLError<'a> {
+impl From<Spanning<ParseError>> for GraphQLError {
+    fn from(f: Spanning<ParseError>) -> GraphQLError {
         GraphQLError::ParseError(f)
     }
 }

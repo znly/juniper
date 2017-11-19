@@ -6,6 +6,7 @@ use types::scalars::{EmptyMutation, ID};
 use schema::model::{DirectiveLocation, DirectiveType, RootNode};
 use schema::meta::{EnumValue, MetaType};
 use validation::{visit, MultiVisitor, MultiVisitorNil, RuleError, ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 struct Being;
 struct Pet;
@@ -59,7 +60,7 @@ impl GraphQLType for Being {
         Some("Being")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -78,7 +79,7 @@ impl GraphQLType for Pet {
         Some("Pet")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -97,7 +98,7 @@ impl GraphQLType for Canine {
         Some("Canine")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -116,7 +117,7 @@ impl GraphQLType for DogCommand {
         Some("DogCommand")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         registry
             .build_enum_type::<Self>(
                 i,
@@ -149,7 +150,7 @@ impl GraphQLType for Dog {
         Some("Dog")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -188,7 +189,7 @@ impl GraphQLType for FurColor {
         Some("FurColor")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         registry
             .build_enum_type::<Self>(
                 i,
@@ -223,7 +224,7 @@ impl GraphQLType for Cat {
         Some("Cat")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -252,7 +253,7 @@ impl GraphQLType for CatOrDog {
         Some("CatOrDog")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let types = &[registry.get_type::<Cat>(i), registry.get_type::<Dog>(i)];
 
         registry.build_union_type::<Self>(i, types).into_meta()
@@ -267,7 +268,7 @@ impl GraphQLType for Intelligent {
         Some("Intelligent")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[registry.field::<Option<i32>>("iq", i)];
 
         registry.build_interface_type::<Self>(i, fields).into_meta()
@@ -282,7 +283,7 @@ impl GraphQLType for Human {
         Some("Human")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -309,7 +310,7 @@ impl GraphQLType for Alien {
         Some("Alien")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("name", i)
@@ -336,7 +337,7 @@ impl GraphQLType for DogOrHuman {
         Some("DogOrHuman")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let types = &[registry.get_type::<Dog>(i), registry.get_type::<Human>(i)];
 
         registry.build_union_type::<Self>(i, types).into_meta()
@@ -351,7 +352,7 @@ impl GraphQLType for HumanOrAlien {
         Some("HumanOrAlien")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let types = &[registry.get_type::<Human>(i), registry.get_type::<Alien>(i)];
 
         registry.build_union_type::<Self>(i, types).into_meta()
@@ -366,7 +367,7 @@ impl GraphQLType for ComplexInput {
         Some("ComplexInput")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry.arg::<bool>("requiredField", i),
             registry.arg::<Option<i32>>("intField", i),
@@ -409,7 +410,7 @@ impl GraphQLType for ComplicatedArgs {
         Some("ComplicatedArgs")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<String>>("intArgField", i)
@@ -468,7 +469,7 @@ impl GraphQLType for QueryRoot {
         Some("QueryRoot")
     }
 
-    fn meta<'r>(i: &(), registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(i: &(), registry: &mut Registry) -> MetaType {
         let fields = &[
             registry
                 .field::<Option<Human>>("human", i)
@@ -526,7 +527,8 @@ where
         &[],
     ));
 
-    let doc = parse_document_source(q).expect(&format!("Parse error on input {:#?}", q));
+    let source = SharedStr::clone_from_str(q);
+    let doc = parse_document_source(source).expect(&format!("Parse error on input {:#?}", q));
     let mut ctx = ValidatorContext::new(unsafe { ::std::mem::transmute(&root.schema) }, &doc);
 
     let mut mv = MultiVisitorNil.with(factory());

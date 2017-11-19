@@ -12,7 +12,7 @@ use schema::meta::{Argument, InterfaceMeta, MetaType, ObjectMeta, PlaceholderMet
 ///
 /// This brings the mutation and query types together, and provides the
 /// predefined metadata fields.
-pub struct RootNode<'a, QueryT: GraphQLType, MutationT: GraphQLType> {
+pub struct RootNode<QueryT: GraphQLType, MutationT: GraphQLType> {
     #[doc(hidden)]
     pub query_type: QueryT,
     #[doc(hidden)]
@@ -22,30 +22,30 @@ pub struct RootNode<'a, QueryT: GraphQLType, MutationT: GraphQLType> {
     #[doc(hidden)]
     pub mutation_info: MutationT::TypeInfo,
     #[doc(hidden)]
-    pub schema: SchemaType<'a>,
+    pub schema: SchemaType,
 }
 
 /// Metadata for a schema
-pub struct SchemaType<'a> {
-    types: FnvHashMap<Name, MetaType<'a>>,
+pub struct SchemaType {
+    types: FnvHashMap<Name, MetaType>,
     query_type_name: String,
     mutation_type_name: Option<String>,
-    directives: FnvHashMap<String, DirectiveType<'a>>,
+    directives: FnvHashMap<String, DirectiveType>,
 }
 
-impl<'a> Context for SchemaType<'a> {}
+impl<'a> Context for SchemaType {}
 
 pub enum TypeType<'a> {
-    Concrete(&'a MetaType<'a>),
+    Concrete(&'a MetaType),
     NonNull(Box<TypeType<'a>>),
     List(Box<TypeType<'a>>),
 }
 
-pub struct DirectiveType<'a> {
+pub struct DirectiveType {
     pub name: String,
     pub description: Option<String>,
     pub locations: Vec<DirectiveLocation>,
-    pub arguments: Vec<Argument<'a>>,
+    pub arguments: Vec<Argument>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -58,7 +58,7 @@ pub enum DirectiveLocation {
     InlineFragment,
 }
 
-impl<'a, QueryT, MutationT> RootNode<'a, QueryT, MutationT>
+impl<'a, QueryT, MutationT> RootNode<QueryT, MutationT>
 where
     QueryT: GraphQLType<TypeInfo = ()>,
     MutationT: GraphQLType<TypeInfo = ()>,
@@ -67,12 +67,12 @@ where
     ///
     /// If the schema should not support mutations, use the
     /// `new` constructor instead.
-    pub fn new(query_obj: QueryT, mutation_obj: MutationT) -> RootNode<'a, QueryT, MutationT> {
+    pub fn new(query_obj: QueryT, mutation_obj: MutationT) -> RootNode<QueryT, MutationT> {
         RootNode::new_with_info(query_obj, mutation_obj, (), ())
     }
 }
 
-impl<'a, QueryT, MutationT> RootNode<'a, QueryT, MutationT>
+impl<'a, QueryT, MutationT> RootNode<QueryT, MutationT>
 where
     QueryT: GraphQLType,
     MutationT: GraphQLType,
@@ -85,7 +85,7 @@ where
         mutation_obj: MutationT,
         query_info: QueryT::TypeInfo,
         mutation_info: MutationT::TypeInfo,
-    ) -> RootNode<'a, QueryT, MutationT> {
+    ) -> RootNode<QueryT, MutationT> {
         RootNode {
             query_type: query_obj,
             mutation_type: mutation_obj,
@@ -96,11 +96,11 @@ where
     }
 }
 
-impl<'a> SchemaType<'a> {
+impl SchemaType {
     pub fn new<QueryT, MutationT>(
         query_info: &QueryT::TypeInfo,
         mutation_info: &MutationT::TypeInfo,
-    ) -> SchemaType<'a>
+    ) -> SchemaType
     where
         QueryT: GraphQLType,
         MutationT: GraphQLType,
@@ -161,7 +161,7 @@ impl<'a> SchemaType<'a> {
         }
     }
 
-    pub fn add_directive(&mut self, directive: DirectiveType<'a>) {
+    pub fn add_directive(&mut self, directive: DirectiveType) {
         self.directives.insert(directive.name.clone(), directive);
     }
 
@@ -216,12 +216,12 @@ impl<'a> SchemaType<'a> {
     pub fn make_type(&self, t: &Type) -> TypeType {
         match *t {
             Type::NonNullNamed(ref n) => TypeType::NonNull(Box::new(
-                self.type_by_name(n).expect("Type not found in schema"),
+                self.type_by_name(n.as_str()).expect("Type not found in schema"),
             )),
             Type::NonNullList(ref inner) => {
                 TypeType::NonNull(Box::new(TypeType::List(Box::new(self.make_type(inner)))))
             }
-            Type::Named(ref n) => self.type_by_name(n).expect("Type not found in schema"),
+            Type::Named(ref n) => self.type_by_name(n.as_str()).expect("Type not found in schema"),
             Type::List(ref inner) => TypeType::List(Box::new(self.make_type(inner))),
         }
     }
@@ -277,7 +277,7 @@ impl<'a> SchemaType<'a> {
         })
     }
 
-    pub fn is_subtype<'b>(&self, sub_type: &Type<'b>, super_type: &Type<'b>) -> bool {
+    pub fn is_subtype<'b>(&self, sub_type: &Type, super_type: &Type) -> bool {
         use ast::Type::*;
 
         if super_type == sub_type {
@@ -288,7 +288,7 @@ impl<'a> SchemaType<'a> {
             (&NonNullNamed(ref super_name), &NonNullNamed(ref sub_name)) |
             (&Named(ref super_name), &Named(ref sub_name)) |
             (&Named(ref super_name), &NonNullNamed(ref sub_name)) => {
-                self.is_named_subtype(sub_name, super_name)
+                self.is_named_subtype(sub_name.as_str(), super_name.as_str())
             }
             (&NonNullList(ref super_inner), &NonNullList(ref sub_inner)) |
             (&List(ref super_inner), &List(ref sub_inner)) |
@@ -322,12 +322,12 @@ impl<'a> TypeType<'a> {
     }
 }
 
-impl<'a> DirectiveType<'a> {
+impl DirectiveType {
     pub fn new(
         name: &str,
         locations: &[DirectiveLocation],
-        arguments: &[Argument<'a>],
-    ) -> DirectiveType<'a> {
+        arguments: &[Argument],
+    ) -> DirectiveType {
         DirectiveType {
             name: name.to_owned(),
             description: None,
@@ -336,7 +336,7 @@ impl<'a> DirectiveType<'a> {
         }
     }
 
-    fn new_skip(registry: &mut Registry<'a>) -> DirectiveType<'a> {
+    fn new_skip(registry: &mut Registry) -> DirectiveType {
         Self::new(
             "skip",
             &[
@@ -348,7 +348,7 @@ impl<'a> DirectiveType<'a> {
         )
     }
 
-    fn new_include(registry: &mut Registry<'a>) -> DirectiveType<'a> {
+    fn new_include(registry: &mut Registry) -> DirectiveType {
         Self::new(
             "include",
             &[
@@ -360,7 +360,7 @@ impl<'a> DirectiveType<'a> {
         )
     }
 
-    pub fn description(mut self, description: &str) -> DirectiveType<'a> {
+    pub fn description(mut self, description: &str) -> DirectiveType {
         self.description = Some(description.to_owned());
         self
     }

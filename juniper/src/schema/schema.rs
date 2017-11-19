@@ -5,7 +5,7 @@ use schema::meta::{Argument, EnumMeta, EnumValue, Field, InputObjectMeta, Interf
                    ObjectMeta, UnionMeta};
 use schema::model::{DirectiveLocation, DirectiveType, RootNode, SchemaType, TypeType};
 
-impl<'a, CtxT, QueryT, MutationT> GraphQLType for RootNode<'a, QueryT, MutationT>
+impl<CtxT, QueryT, MutationT> GraphQLType for RootNode<QueryT, MutationT>
 where
     QueryT: GraphQLType<Context = CtxT>,
     MutationT: GraphQLType<Context = CtxT>,
@@ -17,7 +17,7 @@ where
         QueryT::name(info)
     }
 
-    fn meta<'r>(info: &QueryT::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &QueryT::TypeInfo, registry: &mut Registry) -> MetaType {
         QueryT::meta(info, registry)
     }
 
@@ -43,7 +43,7 @@ where
     }
 }
 
-graphql_object!(<'a> SchemaType<'a>: SchemaType<'a> as "__Schema" |&self| {
+graphql_object!(SchemaType: SchemaType as "__Schema" |&self| {
     field types() -> Vec<TypeType> {
         self.type_list()
             .into_iter()
@@ -69,7 +69,7 @@ graphql_object!(<'a> SchemaType<'a>: SchemaType<'a> as "__Schema" |&self| {
     }
 });
 
-graphql_object!(<'a> TypeType<'a>: SchemaType<'a> as "__Type" |&self| {
+graphql_object!(<'a> TypeType<'a>: SchemaType as "__Type" |&self| {
     field name() -> Option<&str> {
         match *self {
             TypeType::Concrete(t) => t.name(),
@@ -170,7 +170,7 @@ graphql_object!(<'a> TypeType<'a>: SchemaType<'a> as "__Type" |&self| {
     }
 });
 
-graphql_object!(<'a> Field<'a>: SchemaType<'a> as "__Field" |&self| {
+graphql_object!(Field: SchemaType as "__Field" |&self| {
     field name() -> &String {
         &self.name
     }
@@ -196,7 +196,7 @@ graphql_object!(<'a> Field<'a>: SchemaType<'a> as "__Field" |&self| {
     }
 });
 
-graphql_object!(<'a> Argument<'a>: SchemaType<'a> as "__InputValue" |&self| {
+graphql_object!(Argument: SchemaType as "__InputValue" |&self| {
     field name() -> &String {
         &self.name
     }
@@ -244,7 +244,7 @@ graphql_enum!(TypeKind as "__TypeKind" {
 });
 
 
-graphql_object!(<'a> DirectiveType<'a>: SchemaType<'a> as "__Directive" |&self| {
+graphql_object!(DirectiveType: SchemaType as "__Directive" |&self| {
     field name() -> &String {
         &self.name
     }

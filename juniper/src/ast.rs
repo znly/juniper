@@ -1,5 +1,4 @@
 use std::fmt;
-use std::borrow::Cow;
 use std::hash::Hash;
 use std::vec;
 use std::slice;
@@ -8,25 +7,26 @@ use ordermap::OrderMap;
 
 use executor::Variables;
 use parser::Spanning;
+use shared_str::SharedStr;
 
 /// A type literal in the syntax tree
 ///
 /// This enum carries no semantic information and might refer to types that do
 /// not exist.
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub enum Type<'a> {
+pub enum Type {
     /// A nullable named type, e.g. `String`
-    Named(Cow<'a, str>),
+    Named(SharedStr),
     /// A nullable list type, e.g. `[String]`
     ///
     /// The list itself is what's nullable, the containing type might be non-null.
-    List(Box<Type<'a>>),
+    List(Box<Type>),
     /// A non-null named type, e.g. `String!`
-    NonNullNamed(Cow<'a, str>),
+    NonNullNamed(SharedStr),
     /// A non-null list type, e.g. `[String]!`.
     ///
     /// The list itself is what's non-null, the containing type might be null.
-    NonNullList(Box<Type<'a>>),
+    NonNullList(Box<Type>),
 }
 
 /// A JSON-like value that can be passed into the query execution, either
@@ -50,41 +50,41 @@ pub enum InputValue {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct VariableDefinition<'a> {
-    pub var_type: Spanning<Type<'a>>,
+pub struct VariableDefinition {
+    pub var_type: Spanning<Type>,
     pub default_value: Option<Spanning<InputValue>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Arguments<'a> {
-    pub items: Vec<(Spanning<&'a str>, Spanning<InputValue>)>,
+pub struct Arguments {
+    pub items: Vec<(Spanning<SharedStr>, Spanning<InputValue>)>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct VariableDefinitions<'a> {
-    pub items: Vec<(Spanning<&'a str>, VariableDefinition<'a>)>,
+pub struct VariableDefinitions {
+    pub items: Vec<(Spanning<SharedStr>, VariableDefinition)>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Field<'a> {
-    pub alias: Option<Spanning<&'a str>>,
-    pub name: Spanning<&'a str>,
-    pub arguments: Option<Spanning<Arguments<'a>>>,
-    pub directives: Option<Vec<Spanning<Directive<'a>>>>,
-    pub selection_set: Option<Vec<Selection<'a>>>,
+pub struct Field {
+    pub alias: Option<Spanning<SharedStr>>,
+    pub name: Spanning<SharedStr>,
+    pub arguments: Option<Spanning<Arguments>>,
+    pub directives: Option<Vec<Spanning<Directive>>>,
+    pub selection_set: Option<Vec<Selection>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct FragmentSpread<'a> {
-    pub name: Spanning<&'a str>,
-    pub directives: Option<Vec<Spanning<Directive<'a>>>>,
+pub struct FragmentSpread {
+    pub name: Spanning<SharedStr>,
+    pub directives: Option<Vec<Spanning<Directive>>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct InlineFragment<'a> {
-    pub type_condition: Option<Spanning<&'a str>>,
-    pub directives: Option<Vec<Spanning<Directive<'a>>>>,
-    pub selection_set: Vec<Selection<'a>>,
+pub struct InlineFragment {
+    pub type_condition: Option<Spanning<SharedStr>>,
+    pub directives: Option<Vec<Spanning<Directive>>>,
+    pub selection_set: Vec<Selection>,
 }
 
 /// Entry in a GraphQL selection set
@@ -104,16 +104,16 @@ pub struct InlineFragment<'a> {
 /// ```
 #[derive(Clone, PartialEq, Debug)]
 #[allow(missing_docs)]
-pub enum Selection<'a> {
-    Field(Spanning<Field<'a>>),
-    FragmentSpread(Spanning<FragmentSpread<'a>>),
-    InlineFragment(Spanning<InlineFragment<'a>>),
+pub enum Selection {
+    Field(Spanning<Field>),
+    FragmentSpread(Spanning<FragmentSpread>),
+    InlineFragment(Spanning<InlineFragment>),
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Directive<'a> {
-    pub name: Spanning<&'a str>,
-    pub arguments: Option<Spanning<Arguments<'a>>>,
+pub struct Directive {
+    pub name: Spanning<SharedStr>,
+    pub arguments: Option<Spanning<Arguments>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -123,29 +123,29 @@ pub enum OperationType {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Operation<'a> {
+pub struct Operation {
     pub operation_type: OperationType,
-    pub name: Option<Spanning<&'a str>>,
-    pub variable_definitions: Option<Spanning<VariableDefinitions<'a>>>,
-    pub directives: Option<Vec<Spanning<Directive<'a>>>>,
-    pub selection_set: Vec<Selection<'a>>,
+    pub name: Option<Spanning<SharedStr>>,
+    pub variable_definitions: Option<Spanning<VariableDefinitions>>,
+    pub directives: Option<Vec<Spanning<Directive>>>,
+    pub selection_set: Vec<Selection>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Fragment<'a> {
-    pub name: Spanning<&'a str>,
-    pub type_condition: Spanning<&'a str>,
-    pub directives: Option<Vec<Spanning<Directive<'a>>>>,
-    pub selection_set: Vec<Selection<'a>>,
+pub struct Fragment {
+    pub name: Spanning<SharedStr>,
+    pub type_condition: Spanning<SharedStr>,
+    pub directives: Option<Vec<Spanning<Directive>>>,
+    pub selection_set: Vec<Selection>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum Definition<'a> {
-    Operation(Spanning<Operation<'a>>),
-    Fragment(Spanning<Fragment<'a>>),
+pub enum Definition {
+    Operation(Spanning<Operation>),
+    Fragment(Spanning<Fragment>),
 }
 
-pub type Document<'a> = Vec<Definition<'a>>;
+pub type Document = Vec<Definition>;
 
 /// Parse an unstructured input value into a Rust data type.
 ///
@@ -164,13 +164,13 @@ pub trait ToInputValue: Sized {
     fn to_input_value(&self) -> InputValue;
 }
 
-impl<'a> Type<'a> {
+impl Type {
     /// Get the name of a named type.
     ///
     /// Only applies to named types; lists will return `None`.
     pub fn name(&self) -> Option<&str> {
         match *self {
-            Type::Named(ref n) | Type::NonNullNamed(ref n) => Some(n),
+            Type::Named(ref n) | Type::NonNullNamed(ref n) => Some(n.as_str()),
             _ => None,
         }
     }
@@ -180,7 +180,7 @@ impl<'a> Type<'a> {
     /// All type literals contain exactly one named type.
     pub fn innermost_name(&self) -> &str {
         match *self {
-            Type::Named(ref n) | Type::NonNullNamed(ref n) => n,
+            Type::Named(ref n) | Type::NonNullNamed(ref n) => n.as_str(),
             Type::List(ref l) | Type::NonNullList(ref l) => l.innermost_name(),
         }
     }
@@ -194,7 +194,7 @@ impl<'a> Type<'a> {
     }
 }
 
-impl<'a> fmt::Display for Type<'a> {
+impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Type::Named(ref n) => write!(f, "{}", n),
@@ -460,16 +460,16 @@ impl fmt::Display for InputValue {
     }
 }
 
-impl<'a> Arguments<'a> {
-    pub fn into_iter(self) -> vec::IntoIter<(Spanning<&'a str>, Spanning<InputValue>)> {
+impl Arguments {
+    pub fn into_iter(self) -> vec::IntoIter<(Spanning<SharedStr>, Spanning<InputValue>)> {
         self.items.into_iter()
     }
 
-    pub fn iter(&self) -> slice::Iter<(Spanning<&'a str>, Spanning<InputValue>)> {
+    pub fn iter(&self) -> slice::Iter<(Spanning<SharedStr>, Spanning<InputValue>)> {
         self.items.iter()
     }
 
-    pub fn iter_mut(&mut self) -> slice::IterMut<(Spanning<&'a str>, Spanning<InputValue>)> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<(Spanning<SharedStr>, Spanning<InputValue>)> {
         self.items.iter_mut()
     }
 
@@ -480,14 +480,14 @@ impl<'a> Arguments<'a> {
     pub fn get(&self, key: &str) -> Option<&Spanning<InputValue>> {
         self.items
             .iter()
-            .filter(|&&(ref k, _)| k.item == key)
+            .filter(|&&(ref k, _)| k.item.as_str() == key)
             .map(|&(_, ref v)| v)
             .next()
     }
 }
 
-impl<'a> VariableDefinitions<'a> {
-    pub fn iter(&self) -> slice::Iter<(Spanning<&'a str>, VariableDefinition)> {
+impl VariableDefinitions {
+    pub fn iter(&self) -> slice::Iter<(Spanning<SharedStr>, VariableDefinition)> {
         self.items.iter()
     }
 }

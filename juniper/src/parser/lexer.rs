@@ -5,22 +5,23 @@ use std::result::Result;
 use std::fmt;
 
 use parser::{SourcePosition, Spanning};
+use shared_str::SharedStr;
 
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct Lexer<'a> {
-    iterator: Peekable<CharIndices<'a>>,
-    source: &'a str,
+    iterator: &'a mut Peekable<CharIndices<'a>>,
+    source: SharedStr,
     length: usize,
     position: SourcePosition,
     has_reached_eof: bool,
 }
 
 /// A single token in the input source
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(missing_docs)]
-pub enum Token<'a> {
-    Name(&'a str),
+pub enum Token {
+    Name(SharedStr),
     Int(i32),
     Float(f64),
     String(String),
@@ -84,15 +85,16 @@ pub enum LexerError {
     InvalidNumber,
 }
 
-pub type LexerResult<'a> = Result<Spanning<Token<'a>>, Spanning<LexerError>>;
+pub type LexerResult = Result<Spanning<Token>, Spanning<LexerError>>;
 
 impl<'a> Lexer<'a> {
     #[doc(hidden)]
-    pub fn new(source: &'a str) -> Lexer<'a> {
+    pub fn new(source: SharedStr, char_indices: &'a mut Peekable<CharIndices<'a>>) -> Lexer<'a> {
+        let len = source.len();
         Lexer {
-            iterator: source.char_indices().peekable(),
+            iterator: char_indices,
             source: source,
-            length: source.len(),
+            length: len,
             position: SourcePosition::new_origin(),
             has_reached_eof: false,
         }
@@ -122,7 +124,7 @@ impl<'a> Lexer<'a> {
         next
     }
 
-    fn emit_single_char(&mut self, t: Token<'a>) -> Spanning<Token<'a>> {
+    fn emit_single_char(&mut self, t: Token) -> Spanning<Token> {
         assert!(self.position.index() <= self.length);
 
         let start_pos = self.position.clone();
@@ -157,7 +159,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn scan_ellipsis(&mut self) -> LexerResult<'a> {
+    fn scan_ellipsis(&mut self) -> LexerResult {
         let start_pos = self.position.clone();
 
         for _ in 0..3 {
@@ -180,7 +182,7 @@ impl<'a> Lexer<'a> {
         ))
     }
 
-    fn scan_name(&mut self) -> LexerResult<'a> {
+    fn scan_name(&mut self) -> LexerResult {
         let start_pos = self.position.clone();
         let (start_idx, start_ch) = try!(self.next_char().ok_or(Spanning::zero_width(
             &self.position,
@@ -202,11 +204,11 @@ impl<'a> Lexer<'a> {
         Ok(Spanning::start_end(
             &start_pos,
             &self.position,
-            Token::Name(&self.source[start_idx..end_idx + 1]),
+            Token::Name(self.source.get_range(start_idx, end_idx + 1)),
         ))
     }
 
-    fn scan_string(&mut self) -> LexerResult<'a> {
+    fn scan_string(&mut self) -> LexerResult {
         let start_pos = self.position.clone();
         let (_, start_ch) = try!(self.next_char().ok_or(Spanning::zero_width(
             &self.position,
@@ -360,7 +362,7 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn scan_number(&mut self) -> LexerResult<'a> {
+    fn scan_number(&mut self) -> LexerResult {
         let start_pos = self.position.clone();
         let int_part = try!(self.scan_integer_part());
         let mut frac_part = None;
@@ -479,7 +481,7 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = LexerResult<'a>;
+    type Item = LexerResult;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.has_reached_eof {
@@ -523,10 +525,10 @@ impl<'a> Iterator for Lexer<'a> {
     }
 }
 
-impl<'a> fmt::Display for Token<'a> {
+impl<'a> fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Token::Name(name) => write!(f, "{}", name),
+            Token::Name(ref name) => write!(f, "{}", name),
             Token::Int(i) => write!(f, "{}", i),
             Token::Float(v) => write!(f, "{}", v),
             Token::String(ref s) => {

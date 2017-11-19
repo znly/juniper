@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::fmt::Display;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -11,6 +10,7 @@ use ast::{Definition, Document, Fragment, FromInputValue, InputValue, OperationT
           ToInputValue, Type};
 use value::Value;
 use parser::SourcePosition;
+use shared_str::SharedStr;
 
 use schema::meta::{Argument, EnumMeta, EnumValue, Field, InputObjectMeta, InterfaceMeta, ListMeta,
                    MetaType, NullableMeta, ObjectMeta, PlaceholderMeta, ScalarMeta, UnionMeta};
@@ -24,15 +24,15 @@ use types::name::Name;
 /// The registry gathers metadata for all types in a schema. It provides
 /// convenience methods to convert types implementing the `GraphQLType` trait
 /// into `Type` instances and automatically registers them.
-pub struct Registry<'r> {
+pub struct Registry {
     /// Currently registered types
-    pub types: FnvHashMap<Name, MetaType<'r>>,
+    pub types: FnvHashMap<Name, MetaType>,
 }
 
 #[derive(Clone)]
 pub enum FieldPath<'a> {
     Root(SourcePosition),
-    Field(&'a str, SourcePosition, &'a FieldPath<'a>),
+    Field(SharedStr, SourcePosition, &'a FieldPath<'a>),
 }
 
 /// Query execution engine
@@ -43,10 +43,10 @@ pub struct Executor<'a, CtxT>
 where
     CtxT: 'a,
 {
-    fragments: &'a HashMap<&'a str, &'a Fragment<'a>>,
+    fragments: &'a HashMap<SharedStr, &'a Fragment>,
     variables: &'a Variables,
-    current_selection_set: Option<&'a [Selection<'a>]>,
-    schema: &'a SchemaType<'a>,
+    current_selection_set: Option<&'a [Selection]>,
+    schema: &'a SchemaType,
     context: &'a CtxT,
     errors: &'a RwLock<Vec<ExecutionError>>,
     field_path: FieldPath<'a>,
@@ -315,7 +315,7 @@ impl<'a, CtxT> Executor<'a, CtxT> {
     #[doc(hidden)]
     pub fn sub_executor(
         &self,
-        field_name: Option<&'a str>,
+        field_name: Option<SharedStr>,
         location: SourcePosition,
         selection_set: Option<&'a [Selection]>,
     ) -> Executor<CtxT> {
@@ -386,9 +386,9 @@ impl<'a> FieldPath<'a> {
     fn construct_path(&self, acc: &mut Vec<String>) {
         match *self {
             FieldPath::Root(_) => (),
-            FieldPath::Field(name, _, parent) => {
+            FieldPath::Field(ref name, _, parent) => {
                 parent.construct_path(acc);
-                acc.push(name.to_owned());
+                acc.push(name.to_string());
             }
         }
     }
@@ -432,7 +432,7 @@ pub fn execute_validated_query<'a, QueryT, MutationT, CtxT>(
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
     context: &CtxT,
-) -> Result<(Value, Vec<ExecutionError>), GraphQLError<'a>>
+) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
 where
     QueryT: GraphQLType<Context = CtxT>,
     MutationT: GraphQLType<Context = CtxT>,
@@ -448,7 +448,7 @@ where
                 }
 
                 let move_op = operation_name.is_none() ||
-                    op.item.name.as_ref().map(|s| s.item.as_ref()) == operation_name;
+                    op.item.name.as_ref().map(|s| s.item.as_str()) == operation_name;
 
                 if move_op {
                     operation = Some(op);
@@ -470,7 +470,7 @@ where
             .filter_map(|&(ref name, ref def)| {
                 def.default_value
                     .as_ref()
-                    .map(|i| (name.item.to_owned(), i.item.clone()))
+                    .map(|i| (name.item.to_string(), i.item.clone()))
             })
             .collect::<HashMap<String, InputValue>>()
     });
@@ -495,7 +495,7 @@ where
         let executor = Executor {
             fragments: &fragments
                 .iter()
-                .map(|f| (f.item.name.item, &f.item))
+                .map(|f| (f.item.name.item.clone(), &f.item))
                 .collect(),
             variables: final_vars,
             current_selection_set: Some(&op.item.selection_set[..]),
@@ -519,9 +519,9 @@ where
     Ok((value, errors))
 }
 
-impl<'r> Registry<'r> {
+impl Registry {
     /// Construct a new registry
-    pub fn new(types: FnvHashMap<Name, MetaType<'r>>) -> Registry<'r> {
+    pub fn new(types: FnvHashMap<Name, MetaType>) -> Registry {
         Registry { types: types }
     }
 
@@ -529,7 +529,7 @@ impl<'r> Registry<'r> {
     ///
     /// If the registry hasn't seen a type with this name before, it will
     /// construct its metadata and store it.
-    pub fn get_type<T>(&mut self, info: &T::TypeInfo) -> Type<'r>
+    pub fn get_type<T>(&mut self, info: &T::TypeInfo) -> Type
     where
         T: GraphQLType,
     {
@@ -538,7 +538,7 @@ impl<'r> Registry<'r> {
             if !self.types.contains_key(name) {
                 self.insert_placeholder(
                     validated_name.clone(),
-                    Type::NonNullNamed(Cow::Owned(name.to_string())),
+                    Type::NonNullNamed(SharedStr::clone_from_str(name)),
                 );
                 let meta = T::meta(info, self);
                 self.types.insert(validated_name, meta);
@@ -550,7 +550,7 @@ impl<'r> Registry<'r> {
     }
 
     /// Create a field with the provided name
-    pub fn field<T>(&mut self, name: &str, info: &T::TypeInfo) -> Field<'r>
+    pub fn field<T>(&mut self, name: &str, info: &T::TypeInfo) -> Field
     where
         T: GraphQLType,
     {
@@ -568,7 +568,7 @@ impl<'r> Registry<'r> {
         &mut self,
         name: &str,
         info: &I::TypeInfo,
-    ) -> Field<'r>
+    ) -> Field
     where
         I: GraphQLType,
     {
@@ -582,7 +582,7 @@ impl<'r> Registry<'r> {
     }
 
     /// Create an argument with the provided name
-    pub fn arg<T>(&mut self, name: &str, info: &T::TypeInfo) -> Argument<'r>
+    pub fn arg<T>(&mut self, name: &str, info: &T::TypeInfo) -> Argument
     where
         T: GraphQLType + FromInputValue,
     {
@@ -593,14 +593,14 @@ impl<'r> Registry<'r> {
     ///
     /// When called with type `T`, the actual argument will be given the type
     /// `Option<T>`.
-    pub fn arg_with_default<T>(&mut self, name: &str, value: &T, info: &T::TypeInfo) -> Argument<'r>
+    pub fn arg_with_default<T>(&mut self, name: &str, value: &T, info: &T::TypeInfo) -> Argument
     where
         T: GraphQLType + ToInputValue + FromInputValue,
     {
         Argument::new(name, self.get_type::<Option<T>>(info)).default_value(value.to_input_value())
     }
 
-    fn insert_placeholder(&mut self, name: Name, of_type: Type<'r>) {
+    fn insert_placeholder(&mut self, name: Name, of_type: Type) {
         if !self.types.contains_key(&name) {
             self.types.insert(
                 name,
@@ -612,22 +612,22 @@ impl<'r> Registry<'r> {
     /// Create a scalar meta type
     ///
     /// This expects the type to implement `FromInputValue`.
-    pub fn build_scalar_type<T>(&mut self, info: &T::TypeInfo) -> ScalarMeta<'r>
+    pub fn build_scalar_type<T>(&mut self, info: &T::TypeInfo) -> ScalarMeta
     where
         T: FromInputValue + GraphQLType,
     {
         let name = T::name(info).expect("Scalar types must be named. Implement name()");
-        ScalarMeta::new::<T>(Cow::Owned(name.to_string()))
+        ScalarMeta::new::<T>(name.to_string())
     }
 
     /// Create a list meta type
-    pub fn build_list_type<T: GraphQLType>(&mut self, info: &T::TypeInfo) -> ListMeta<'r> {
+    pub fn build_list_type<T: GraphQLType>(&mut self, info: &T::TypeInfo) -> ListMeta {
         let of_type = self.get_type::<T>(info);
         ListMeta::new(of_type)
     }
 
     /// Create a nullable meta type
-    pub fn build_nullable_type<T: GraphQLType>(&mut self, info: &T::TypeInfo) -> NullableMeta<'r> {
+    pub fn build_nullable_type<T: GraphQLType>(&mut self, info: &T::TypeInfo) -> NullableMeta {
         let of_type = self.get_type::<T>(info);
         NullableMeta::new(of_type)
     }
@@ -639,8 +639,8 @@ impl<'r> Registry<'r> {
     pub fn build_object_type<T>(
         &mut self,
         info: &T::TypeInfo,
-        fields: &[Field<'r>],
-    ) -> ObjectMeta<'r>
+        fields: &[Field],
+    ) -> ObjectMeta
     where
         T: GraphQLType,
     {
@@ -648,17 +648,17 @@ impl<'r> Registry<'r> {
 
         let mut v = fields.to_vec();
         v.push(self.field::<String>("__typename", &()));
-        ObjectMeta::new(Cow::Owned(name.to_string()), &v)
+        ObjectMeta::new(name.to_string(), &v)
     }
 
     /// Create an enum meta type
-    pub fn build_enum_type<T>(&mut self, info: &T::TypeInfo, values: &[EnumValue]) -> EnumMeta<'r>
+    pub fn build_enum_type<T>(&mut self, info: &T::TypeInfo, values: &[EnumValue]) -> EnumMeta
     where
         T: FromInputValue + GraphQLType,
     {
         let name = T::name(info).expect("Enum types must be named. Implement name()");
 
-        EnumMeta::new::<T>(Cow::Owned(name.to_string()), values)
+        EnumMeta::new::<T>(name.to_string(), values)
     }
 
     /// Create an interface meta type builder,
@@ -666,8 +666,8 @@ impl<'r> Registry<'r> {
     pub fn build_interface_type<T>(
         &mut self,
         info: &T::TypeInfo,
-        fields: &[Field<'r>],
-    ) -> InterfaceMeta<'r>
+        fields: &[Field],
+    ) -> InterfaceMeta
     where
         T: GraphQLType,
     {
@@ -675,30 +675,30 @@ impl<'r> Registry<'r> {
 
         let mut v = fields.to_vec();
         v.push(self.field::<String>("__typename", &()));
-        InterfaceMeta::new(Cow::Owned(name.to_string()), &v)
+        InterfaceMeta::new(name.to_string(), &v)
     }
 
     /// Create a union meta type builder
-    pub fn build_union_type<T>(&mut self, info: &T::TypeInfo, types: &[Type<'r>]) -> UnionMeta<'r>
+    pub fn build_union_type<T>(&mut self, info: &T::TypeInfo, types: &[Type]) -> UnionMeta
     where
         T: GraphQLType,
     {
         let name = T::name(info).expect("Union types must be named. Implement name()");
 
-        UnionMeta::new(Cow::Owned(name.to_string()), types)
+        UnionMeta::new(name.to_string(), types)
     }
 
     /// Create an input object meta type builder
     pub fn build_input_object_type<T>(
         &mut self,
         info: &T::TypeInfo,
-        args: &[Argument<'r>],
-    ) -> InputObjectMeta<'r>
+        args: &[Argument],
+    ) -> InputObjectMeta
     where
         T: FromInputValue + GraphQLType,
     {
         let name = T::name(info).expect("Input object types must be named. Implement name()");
 
-        InputObjectMeta::new::<T>(Cow::Owned(name.to_string()), args)
+        InputObjectMeta::new::<T>(name.to_string(), args)
     }
 }

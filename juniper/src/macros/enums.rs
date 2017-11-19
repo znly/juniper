@@ -67,7 +67,7 @@ macro_rules! graphql_enum {
                 Some(graphql_enum!(@as_expr, $outname))
             }
 
-            fn meta<'r>(info: &(), registry: &mut $crate::Registry<'r>) -> $crate::meta::MetaType<'r> {
+            fn meta(info: &(), registry: &mut $crate::Registry) -> $crate::meta::MetaType {
                 graphql_enum!(
                     @maybe_apply, $descr, description,
                     registry.build_enum_type::<$name>(info, &[

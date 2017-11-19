@@ -71,7 +71,7 @@ macro_rules! graphql_scalar {
                 Some(graphql_scalar!( @as_expr, $outname ))
             }
 
-            fn meta<'r>(info: &(), registry: &mut $crate::Registry<'r>) -> $crate::meta::MetaType<'r> {
+            fn meta(info: &(), registry: &mut $crate::Registry) -> $crate::meta::MetaType {
                 graphql_scalar!(
                     @maybe_apply, $descr, description,
                     registry.build_scalar_type::<Self>(info))

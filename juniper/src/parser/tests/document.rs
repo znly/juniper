@@ -1,13 +1,16 @@
 use ast::{Arguments, Definition, Document, Field, InputValue, Operation, OperationType, Selection};
 use parser::{ParseError, SourcePosition, Spanning, Token};
 use parser::document::parse_document_source;
+use shared_str::SharedStr;
 
 fn parse_document(s: &str) -> Document {
-    parse_document_source(s).expect(&format!("Parse error on input {:#?}", s))
+    let source = SharedStr::clone_from_str(s);
+    parse_document_source(source).expect(&format!("Parse error on input {:#?}", s))
 }
 
-fn parse_document_error<'a>(s: &'a str) -> Spanning<ParseError<'a>> {
-    match parse_document_source(s) {
+fn parse_document_error<'a>(s: &'a str) -> Spanning<ParseError> {
+    let source = SharedStr::clone_from_str(s);
+    match parse_document_source(source) {
         Ok(doc) => panic!("*No* parse error on input {:#?} =>\n{:#?}", s, doc),
         Err(err) => err,
     }
@@ -44,7 +47,7 @@ fn simple_ast() {
                                 name: Spanning::start_end(
                                     &SourcePosition::new(31, 2, 16),
                                     &SourcePosition::new(35, 2, 20),
-                                    "node",
+                                    SharedStr::clone_from_str("node"),
                                 ),
                                 arguments: Some(Spanning::start_end(
                                     &SourcePosition::new(35, 2, 20),
@@ -55,7 +58,7 @@ fn simple_ast() {
                                                 Spanning::start_end(
                                                     &SourcePosition::new(36, 2, 21),
                                                     &SourcePosition::new(38, 2, 23),
-                                                    "id",
+                                                    SharedStr::clone_from_str("id"),
                                                 ),
                                                 Spanning::start_end(
                                                     &SourcePosition::new(40, 2, 25),
@@ -76,7 +79,7 @@ fn simple_ast() {
                                             name: Spanning::start_end(
                                                 &SourcePosition::new(65, 3, 20),
                                                 &SourcePosition::new(67, 3, 22),
-                                                "id",
+                                                SharedStr::clone_from_str("id"),
                                             ),
                                             arguments: None,
                                             directives: None,
@@ -91,7 +94,7 @@ fn simple_ast() {
                                             name: Spanning::start_end(
                                                 &SourcePosition::new(88, 4, 20),
                                                 &SourcePosition::new(92, 4, 24),
-                                                "name",
+                                                SharedStr::clone_from_str("name"),
                                             ),
                                             arguments: None,
                                             directives: None,
@@ -123,7 +126,7 @@ fn errors() {
         Spanning::start_end(
             &SourcePosition::new(36, 1, 19),
             &SourcePosition::new(40, 1, 23),
-            ParseError::UnexpectedToken(Token::Name("Type"))
+            ParseError::UnexpectedToken(Token::Name(SharedStr::clone_from_str("Type")))
         )
     );
 

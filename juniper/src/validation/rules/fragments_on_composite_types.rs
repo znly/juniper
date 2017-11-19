@@ -21,7 +21,7 @@ impl<'a> Visitor<'a> for FragmentsOnCompositeTypes {
                     let type_cond = &f.item.type_condition;
 
                     context.report_error(
-                        &error_message(Some(f.item.name.item), type_name),
+                        &error_message(Some(&f.item.name.item), type_name),
                         &[type_cond.start.clone()],
                     );
                 }

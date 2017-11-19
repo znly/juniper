@@ -1,8 +1,11 @@
 use parser::{Lexer, LexerError, SourcePosition, Spanning, Token};
+use shared_str::SharedStr;
 
-fn tokenize_to_vec<'a>(s: &'a str) -> Vec<Spanning<Token<'a>>> {
+fn tokenize_to_vec(s: &str) -> Vec<Spanning<Token>> {
     let mut tokens = Vec::new();
-    let mut lexer = Lexer::new(s);
+    let source = SharedStr::clone_from_str(s);
+    let mut char_indices = s.char_indices().peekable();
+    let mut lexer = Lexer::new(source, &mut char_indices);
 
     loop {
         match lexer.next() {
@@ -21,7 +24,7 @@ fn tokenize_to_vec<'a>(s: &'a str) -> Vec<Spanning<Token<'a>>> {
     tokens
 }
 
-fn tokenize_single<'a>(s: &'a str) -> Spanning<Token<'a>> {
+fn tokenize_single(s: &str) -> Spanning<Token> {
     let mut tokens = tokenize_to_vec(s);
 
     assert_eq!(tokens.len(), 2);
@@ -31,7 +34,9 @@ fn tokenize_single<'a>(s: &'a str) -> Spanning<Token<'a>> {
 }
 
 fn tokenize_error(s: &str) -> Spanning<LexerError> {
-    let mut lexer = Lexer::new(s);
+    let source = SharedStr::clone_from_str(s);
+    let mut char_indices = s.char_indices().peekable();
+    let mut lexer = Lexer::new(source, &mut char_indices);
 
     loop {
         match lexer.next() {
@@ -58,8 +63,11 @@ fn empty_source() {
 
 #[test]
 fn disallow_control_codes() {
+    let s = "\u{0007}";
+    let source = SharedStr::clone_from_str(s);
+    let mut char_indices = s.char_indices().peekable();
     assert_eq!(
-        Lexer::new("\u{0007}").next(),
+        Lexer::new(source, &mut char_indices).next(),
         Some(Err(Spanning::zero_width(
             &SourcePosition::new_origin(),
             LexerError::UnknownCharacter('\u{0007}')
@@ -81,7 +89,7 @@ fn skip_whitespace() {
             Spanning::start_end(
                 &SourcePosition::new(14, 2, 12),
                 &SourcePosition::new(17, 2, 15),
-                Token::Name("foo"),
+                Token::Name(SharedStr::clone_from_str("foo")),
             ),
             Spanning::zero_width(&SourcePosition::new(31, 4, 12), Token::EndOfFile),
         ]
@@ -101,7 +109,7 @@ fn skip_comments() {
             Spanning::start_end(
                 &SourcePosition::new(34, 2, 12),
                 &SourcePosition::new(37, 2, 15),
-                Token::Name("foo"),
+                Token::Name(SharedStr::clone_from_str("foo")),
             ),
             Spanning::zero_width(&SourcePosition::new(58, 3, 12), Token::EndOfFile),
         ]
@@ -116,7 +124,7 @@ fn skip_commas() {
             Spanning::start_end(
                 &SourcePosition::new(3, 0, 3),
                 &SourcePosition::new(6, 0, 6),
-                Token::Name("foo"),
+                Token::Name(SharedStr::clone_from_str("foo")),
             ),
             Spanning::zero_width(&SourcePosition::new(9, 0, 9), Token::EndOfFile),
         ]
@@ -125,14 +133,15 @@ fn skip_commas() {
 
 #[test]
 fn error_positions() {
-    assert_eq!(
-        Lexer::new(
-            r#"
+    let s = r#"
 
             ?
 
-            "#
-        ).next(),
+            "#;
+    let source = SharedStr::clone_from_str(s);
+    let mut char_indices = s.char_indices().peekable();
+    assert_eq!(
+        Lexer::new(source, &mut char_indices).next(),
         Some(Err(Spanning::zero_width(
             &SourcePosition::new(14, 2, 12),
             LexerError::UnknownCharacter('?')
@@ -650,7 +659,7 @@ fn punctuation_error() {
 
 #[test]
 fn display() {
-    assert_eq!(format!("{}", Token::Name("identifier")), "identifier");
+    assert_eq!(format!("{}", Token::Name(SharedStr::clone_from_str("identifier"))), "identifier");
 
     assert_eq!(format!("{}", Token::Int(123)), "123");
 

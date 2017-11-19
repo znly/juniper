@@ -241,7 +241,7 @@ macro_rules! graphql_interface {
 
             #[allow(unused_assignments)]
             #[allow(unused_mut)]
-            fn meta<'r>(info: &(), registry: &mut $crate::Registry<'r>) -> $crate::meta::MetaType<'r> {
+            fn meta(info: &(), registry: &mut $crate::Registry) -> $crate::meta::MetaType {
                 let mut fields = Vec::new();
                 let mut description = None;
                 graphql_interface!(@ gather_meta, (registry, fields, info, description), $($items)*);

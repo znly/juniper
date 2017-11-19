@@ -52,7 +52,7 @@ impl<'a> Visitor<'a> for NoUnusedFragments<'a> {
                 ..
             }) = *def
             {
-                let op_name = name.as_ref().map(|s| s.item);
+                let op_name = name.as_ref().map(|s| s.item.as_str());
                 self.find_reachable_fragments(&Scope::Operation(op_name), &mut reachable);
             }
         }
@@ -78,9 +78,9 @@ impl<'a> Visitor<'a> for NoUnusedFragments<'a> {
         _: &mut ValidatorContext<'a>,
         f: &'a Spanning<Fragment>,
     ) {
-        self.current_scope = Some(Scope::Fragment(f.item.name.item));
+        self.current_scope = Some(Scope::Fragment(&f.item.name.item));
         self.defined_fragments
-            .insert(Spanning::start_end(&f.start, &f.end, f.item.name.item));
+            .insert(Spanning::start_end(&f.start, &f.end, &f.item.name.item));
     }
 
     fn enter_fragment_spread(
@@ -92,7 +92,7 @@ impl<'a> Visitor<'a> for NoUnusedFragments<'a> {
             self.spreads
                 .entry(scope.clone())
                 .or_insert_with(Vec::new)
-                .push(spread.item.name.item);
+                .push(&spread.item.name.item);
         }
     }
 }

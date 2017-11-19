@@ -2,6 +2,7 @@ use ast::{Directive, Document, Field, Fragment, FragmentSpread, InlineFragment, 
           Operation, Selection, VariableDefinition};
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 #[doc(hidden)]
 pub trait MultiVisitor<'a> {
@@ -77,14 +78,14 @@ where
     fn enter_variable_definition(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        def: &'a (Spanning<&'a str>, VariableDefinition),
+        def: &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         self.visit_all(|v| v.enter_variable_definition(ctx, def));
     }
     fn exit_variable_definition(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        def: &'a (Spanning<&'a str>, VariableDefinition),
+        def: &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         self.visit_all(|v| v.exit_variable_definition(ctx, def));
     }
@@ -99,14 +100,14 @@ where
     fn enter_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        arg: &'a (Spanning<&'a str>, Spanning<InputValue>),
+        arg: &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         self.visit_all(|v| v.enter_argument(ctx, arg));
     }
     fn exit_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        arg: &'a (Spanning<&'a str>, Spanning<InputValue>),
+        arg: &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         self.visit_all(|v| v.exit_argument(ctx, arg));
     }

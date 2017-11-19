@@ -5,7 +5,7 @@ use parser::Spanning;
 use schema::meta::MetaType;
 
 pub struct PossibleFragmentSpreads<'a> {
-    fragment_types: HashMap<&'a str, &'a MetaType<'a>>,
+    fragment_types: HashMap<&'a str, &'a MetaType>,
 }
 
 pub fn factory<'a>() -> PossibleFragmentSpreads<'a> {
@@ -18,8 +18,8 @@ impl<'a> Visitor<'a> for PossibleFragmentSpreads<'a> {
     fn enter_document(&mut self, ctx: &mut ValidatorContext<'a>, defs: &'a Document) {
         for def in defs {
             if let Definition::Fragment(Spanning { ref item, .. }) = *def {
-                if let Some(t) = ctx.schema.concrete_type_by_name(item.type_condition.item) {
-                    self.fragment_types.insert(item.name.item, t);
+                if let Some(t) = ctx.schema.concrete_type_by_name(&item.type_condition.item) {
+                    self.fragment_types.insert(&item.name.item, t);
                 }
             }
         }
@@ -35,7 +35,7 @@ impl<'a> Visitor<'a> for PossibleFragmentSpreads<'a> {
             frag.item
                 .type_condition
                 .as_ref()
-                .and_then(|s| ctx.schema.concrete_type_by_name(s.item)),
+                .and_then(|s| ctx.schema.concrete_type_by_name(&s.item)),
         ) {
             if !ctx.schema.type_overlap(parent_type, frag_type) {
                 ctx.report_error(
@@ -57,12 +57,12 @@ impl<'a> Visitor<'a> for PossibleFragmentSpreads<'a> {
     ) {
         if let (Some(parent_type), Some(frag_type)) = (
             ctx.parent_type(),
-            self.fragment_types.get(spread.item.name.item),
+            self.fragment_types.get(spread.item.name.item.as_str()),
         ) {
             if !ctx.schema.type_overlap(parent_type, frag_type) {
                 ctx.report_error(
                     &error_message(
-                        Some(spread.item.name.item),
+                        Some(&spread.item.name.item),
                         parent_type.name().unwrap_or("<unknown>"),
                         frag_type.name().unwrap_or("<unknown>"),
                     ),

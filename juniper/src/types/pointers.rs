@@ -16,7 +16,7 @@ where
         T::name(info)
     }
 
-    fn meta<'r>(info: &T::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &T::TypeInfo, registry: &mut Registry) -> MetaType {
         T::meta(info, registry)
     }
 
@@ -82,7 +82,7 @@ where
         T::name(info)
     }
 
-    fn meta<'r>(info: &T::TypeInfo, registry: &mut Registry<'r>) -> MetaType<'r> {
+    fn meta(info: &T::TypeInfo, registry: &mut Registry) -> MetaType {
         T::meta(info, registry)
     }
 

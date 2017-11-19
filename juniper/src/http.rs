@@ -61,7 +61,7 @@ impl GraphQLRequest {
         &'a self,
         root_node: &RootNode<QueryT, MutationT>,
         context: &CtxT,
-    ) -> GraphQLResponse<'a>
+    ) -> GraphQLResponse
     where
         QueryT: GraphQLType<Context = CtxT>,
         MutationT: GraphQLType<Context = CtxT>,
@@ -81,9 +81,9 @@ impl GraphQLRequest {
 /// This struct implements Serialize, so you can simply serialize this
 /// to JSON and send it over the wire. Use the `is_ok` method to determine
 /// whether to send a 200 or 400 HTTP status code.
-pub struct GraphQLResponse<'a>(Result<(Value, Vec<ExecutionError>), GraphQLError<'a>>);
+pub struct GraphQLResponse(Result<(Value, Vec<ExecutionError>), GraphQLError>);
 
-impl<'a> GraphQLResponse<'a> {
+impl GraphQLResponse {
     /// Was the request successful or not?
     ///
     /// Note that there still might be errors in the response even though it's
@@ -93,7 +93,7 @@ impl<'a> GraphQLResponse<'a> {
     }
 }
 
-impl<'a> ser::Serialize for GraphQLResponse<'a> {
+impl ser::Serialize for GraphQLResponse {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,

@@ -2,11 +2,11 @@ use ast::InputValue;
 
 use parser::{ParseError, ParseResult, Parser, Spanning, Token};
 
-pub fn parse_value_literal<'a>(
-    parser: &mut Parser<'a>,
+pub fn parse_value_literal(
+    parser: &mut Parser,
     is_const: bool,
-) -> ParseResult<'a, InputValue> {
-    match *parser.peek() {
+) -> ParseResult<InputValue> {
+    match parser.peek().clone() {
         Spanning {
             item: Token::BracketOpen,
             ..
@@ -39,30 +39,30 @@ pub fn parse_value_literal<'a>(
             panic!("Internal parser error");
         })),
         Spanning {
-            item: Token::Name("true"),
+            item: Token::Name(ref n),
             ..
-        } => Ok(parser.next()?.map(|_| InputValue::boolean(true))),
+        } if *n == "true" => Ok(parser.next()?.map(|_| InputValue::boolean(true))),
         Spanning {
-            item: Token::Name("false"),
+            item: Token::Name(ref n),
             ..
-        } => Ok(parser.next()?.map(|_| InputValue::boolean(false))),
+        } if *n == "false" => Ok(parser.next()?.map(|_| InputValue::boolean(false))),
         Spanning {
-            item: Token::Name("null"),
+            item: Token::Name(ref n),
             ..
-        } => Ok(parser.next()?.map(|_| InputValue::null())),
+        } if *n == "null" => Ok(parser.next()?.map(|_| InputValue::null())),
         Spanning {
-            item: Token::Name(name),
+            item: Token::Name(ref name),
             ..
         } => Ok(
             parser
                 .next()?
-                .map(|_| InputValue::enum_value(name.to_owned())),
+                .map(|_| InputValue::enum_value(name)),
         ),
         _ => Err(parser.next()?.map(ParseError::UnexpectedToken)),
     }
 }
 
-fn parse_list_literal<'a>(parser: &mut Parser<'a>, is_const: bool) -> ParseResult<'a, InputValue> {
+fn parse_list_literal(parser: &mut Parser, is_const: bool) -> ParseResult<InputValue> {
     Ok(
         try!(parser.delimited_list(
             &Token::BracketOpen,
@@ -72,10 +72,10 @@ fn parse_list_literal<'a>(parser: &mut Parser<'a>, is_const: bool) -> ParseResul
     )
 }
 
-fn parse_object_literal<'a>(
-    parser: &mut Parser<'a>,
+fn parse_object_literal(
+    parser: &mut Parser,
     is_const: bool,
-) -> ParseResult<'a, InputValue> {
+) -> ParseResult<InputValue> {
     Ok(
         try!(parser.delimited_list(
             &Token::CurlyOpen,
@@ -87,10 +87,10 @@ fn parse_object_literal<'a>(
     )
 }
 
-fn parse_object_field<'a>(
-    parser: &mut Parser<'a>,
+fn parse_object_field(
+    parser: &mut Parser,
     is_const: bool,
-) -> ParseResult<'a, (Spanning<String>, Spanning<InputValue>)> {
+) -> ParseResult<(Spanning<String>, Spanning<InputValue>)> {
     let key = try!(parser.expect_name());
 
     try!(parser.expect(&Token::Colon));
@@ -100,11 +100,11 @@ fn parse_object_field<'a>(
     Ok(Spanning::start_end(
         &key.start.clone(),
         &value.end.clone(),
-        (key.map(|s| s.to_owned()), value),
+        (key.map(|s| s.to_string()), value),
     ))
 }
 
-fn parse_variable_literal<'a>(parser: &mut Parser<'a>) -> ParseResult<'a, InputValue> {
+fn parse_variable_literal(parser: &mut Parser) -> ParseResult<InputValue> {
     let Spanning {
         start: start_pos, ..
     } = try!(parser.expect(&Token::Dollar));
@@ -117,6 +117,6 @@ fn parse_variable_literal<'a>(parser: &mut Parser<'a>) -> ParseResult<'a, InputV
     Ok(Spanning::start_end(
         &start_pos,
         &end_pos,
-        InputValue::variable(name),
+        InputValue::variable(name.to_owned()),
     ))
 }

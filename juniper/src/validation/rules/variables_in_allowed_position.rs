@@ -1,9 +1,9 @@
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use ast::{Document, Fragment, FragmentSpread, Operation, Type, VariableDefinition};
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Scope<'a> {
@@ -13,8 +13,8 @@ pub enum Scope<'a> {
 
 pub struct VariableInAllowedPosition<'a> {
     spreads: HashMap<Scope<'a>, HashSet<&'a str>>,
-    variable_usages: HashMap<Scope<'a>, Vec<(Spanning<&'a String>, Type<'a>)>>,
-    variable_defs: HashMap<Scope<'a>, Vec<&'a (Spanning<&'a str>, VariableDefinition<'a>)>>,
+    variable_usages: HashMap<Scope<'a>, Vec<(Spanning<&'a String>, Type)>>,
+    variable_defs: HashMap<Scope<'a>, Vec<&'a (Spanning<SharedStr>, VariableDefinition)>>,
     current_scope: Option<Scope<'a>>,
 }
 
@@ -31,7 +31,7 @@ impl<'a> VariableInAllowedPosition<'a> {
     fn collect_incorrect_usages(
         &self,
         from: &Scope<'a>,
-        var_defs: &Vec<&'a (Spanning<&'a str>, VariableDefinition)>,
+        var_defs: &Vec<&'a (Spanning<SharedStr>, VariableDefinition)>,
         ctx: &mut ValidatorContext<'a>,
         visited: &mut HashSet<Scope<'a>>,
     ) {
@@ -50,7 +50,7 @@ impl<'a> VariableInAllowedPosition<'a> {
                     let expected_type = match (&var_def.default_value, &var_def.var_type.item) {
                         (&Some(_), &Type::List(ref inner)) => Type::NonNullList(inner.clone()),
                         (&Some(_), &Type::Named(ref inner)) => {
-                            Type::NonNullNamed(Cow::Borrowed(inner))
+                            Type::NonNullNamed(inner.clone())
                         }
                         (_, t) => t.clone(),
                     };
@@ -89,7 +89,7 @@ impl<'a> Visitor<'a> for VariableInAllowedPosition<'a> {
         _: &mut ValidatorContext<'a>,
         fragment: &'a Spanning<Fragment>,
     ) {
-        self.current_scope = Some(Scope::Fragment(fragment.item.name.item));
+        self.current_scope = Some(Scope::Fragment(&fragment.item.name.item));
     }
 
     fn enter_operation_definition(
@@ -97,7 +97,7 @@ impl<'a> Visitor<'a> for VariableInAllowedPosition<'a> {
         _: &mut ValidatorContext<'a>,
         op: &'a Spanning<Operation>,
     ) {
-        self.current_scope = Some(Scope::Operation(op.item.name.as_ref().map(|s| s.item)));
+        self.current_scope = Some(Scope::Operation(op.item.name.as_ref().map(|s| s.item.as_str())));
     }
 
     fn enter_fragment_spread(
@@ -109,14 +109,14 @@ impl<'a> Visitor<'a> for VariableInAllowedPosition<'a> {
             self.spreads
                 .entry(scope.clone())
                 .or_insert_with(HashSet::new)
-                .insert(spread.item.name.item);
+                .insert(&spread.item.name.item);
         }
     }
 
     fn enter_variable_definition(
         &mut self,
         _: &mut ValidatorContext<'a>,
-        def: &'a (Spanning<&'a str>, VariableDefinition),
+        def: &'a (Spanning<SharedStr>, VariableDefinition),
     ) {
         if let Some(ref scope) = self.current_scope {
             self.variable_defs

@@ -36,7 +36,7 @@ impl ser::Serialize for ExecutionError {
     }
 }
 
-impl<'a> ser::Serialize for GraphQLError<'a> {
+impl ser::Serialize for GraphQLError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -208,7 +208,7 @@ impl ser::Serialize for SourcePosition {
     }
 }
 
-impl<'a> ser::Serialize for Spanning<ParseError<'a>> {
+impl ser::Serialize for Spanning<ParseError> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,

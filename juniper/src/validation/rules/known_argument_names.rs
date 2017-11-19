@@ -2,15 +2,16 @@ use ast::{Directive, Field, InputValue};
 use schema::meta::Argument;
 use parser::Spanning;
 use validation::{ValidatorContext, Visitor};
+use shared_str::SharedStr;
 
 #[derive(Debug)]
 enum ArgumentPosition<'a> {
-    Directive(&'a str),
-    Field(&'a str, &'a str),
+    Directive(&'a SharedStr),
+    Field(&'a SharedStr, &'a str),
 }
 
 pub struct KnownArgumentNames<'a> {
-    current_args: Option<(ArgumentPosition<'a>, &'a Vec<Argument<'a>>)>,
+    current_args: Option<(ArgumentPosition<'a>, &'a Vec<Argument>)>,
 }
 
 pub fn factory<'a>() -> KnownArgumentNames<'a> {
@@ -23,10 +24,10 @@ impl<'a> Visitor<'a> for KnownArgumentNames<'a> {
         ctx: &mut ValidatorContext<'a>,
         directive: &'a Spanning<Directive>,
     ) {
-        self.current_args = ctx.schema.directive_by_name(directive.item.name.item).map(
+        self.current_args = ctx.schema.directive_by_name(&directive.item.name.item).map(
             |d| {
                 (
-                    ArgumentPosition::Directive(directive.item.name.item),
+                    ArgumentPosition::Directive(&directive.item.name.item),
                     &d.arguments,
                 )
             },
@@ -39,12 +40,12 @@ impl<'a> Visitor<'a> for KnownArgumentNames<'a> {
 
     fn enter_field(&mut self, ctx: &mut ValidatorContext<'a>, field: &'a Spanning<Field>) {
         self.current_args = ctx.parent_type()
-            .and_then(|t| t.field_by_name(field.item.name.item))
+            .and_then(|t| t.field_by_name(&field.item.name.item))
             .and_then(|f| f.arguments.as_ref())
             .map(|args| {
                 (
                     ArgumentPosition::Field(
-                        field.item.name.item,
+                        &field.item.name.item,
                         ctx.parent_type()
                             .expect("Parent type should exist")
                             .name()
@@ -62,16 +63,16 @@ impl<'a> Visitor<'a> for KnownArgumentNames<'a> {
     fn enter_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a>,
-        &(ref arg_name, _): &'a (Spanning<&'a str>, Spanning<InputValue>),
+        &(ref arg_name, _): &'a (Spanning<SharedStr>, Spanning<InputValue>),
     ) {
         if let Some((ref pos, args)) = self.current_args {
             if args.iter().find(|a| a.name == arg_name.item).is_none() {
                 let message = match *pos {
                     ArgumentPosition::Field(field_name, type_name) => {
-                        field_error_message(arg_name.item, field_name, type_name)
+                        field_error_message(&arg_name.item, &field_name, type_name)
                     }
                     ArgumentPosition::Directive(directive_name) => {
-                        directive_error_message(arg_name.item, directive_name)
+                        directive_error_message(&arg_name.item, &directive_name)
                     }
                 };
 

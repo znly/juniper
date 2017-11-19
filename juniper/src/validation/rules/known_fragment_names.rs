@@ -15,9 +15,9 @@ impl<'a> Visitor<'a> for KnownFragmentNames {
         spread: &'a Spanning<FragmentSpread>,
     ) {
         let spread_name = &spread.item.name;
-        if !context.is_known_fragment(spread_name.item) {
+        if !context.is_known_fragment(&spread_name.item) {
             context.report_error(
-                &error_message(spread_name.item),
+                &error_message(&spread_name.item),
                 &[spread_name.start.clone()],
             );
         }
