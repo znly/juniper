@@ -164,7 +164,7 @@ pub fn impl_enum(ast: &syn::DeriveInput) -> Tokens {
                 meta.into_meta()
             }
 
-            fn resolve(&self, _: &(), _: Option<&[::juniper::Selection]>, _: &::juniper::Executor<Self::Context>) -> ::juniper::Value {
+            fn resolve(&self, _: &(), _: Option<&::std::sync::Arc<Vec<::juniper::Selection>>>, _: ::std::sync::Arc<::juniper::Executor<Self::Context>>) -> ::juniper::Value {
                 match self {
                     #(#resolves)*
                 }

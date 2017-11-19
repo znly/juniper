@@ -164,7 +164,7 @@ pub fn impl_object(ast: &syn::DeriveInput) -> Tokens {
                 builder.into_meta()
             }
 
-            fn resolve_field(&self, _: &(), field_name: &str, _: &::juniper::Arguments, executor: &::juniper::Executor<Self::Context>)
+            fn resolve_field(&self, _: &(), field_name: &str, _: &::juniper::Arguments, executor: ::std::sync::Arc<::juniper::Executor<Self::Context>>)
                 -> ::juniper::ExecutionResult
             {
 
