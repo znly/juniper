@@ -77,16 +77,8 @@ macro_rules! __graphql__build_field_matches {
                     $body
                 })();
 
-                let res = $crate::IntoResolvable::into(result, $executorvar.arc_context());
-                return match res {
-                    $crate::DelayedResult::SyncOk(Some((ctx, r))) =>
-                        $executorvar.replaced_context(ctx).resolve_with_ctx(&(), &r),
-                    $crate::DelayedResult::SyncOk(None) =>
-                        $crate::DelayedResult::SyncOk($crate::Value::null()),
-                    $crate::DelayedResult::SyncErr(e) =>
-                        $crate::DelayedResult::SyncErr(e),
-                    $crate::DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
-                };
+                return $crate::IntoResolvable::into(result, $executorvar.arc_context())
+                    .replace_context_and_resolve(&(), &$executorvar);
             }
         )*
         panic!("Field {} not found on type {}", $fieldvar, $outname);

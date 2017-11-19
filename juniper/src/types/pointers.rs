@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use ast::{FromInputValue, InputValue, Selection, ToInputValue};
-use value::Value;
 
 use schema::meta::MetaType;
 use executor::{ExecutionResult, Executor, Registry};
@@ -47,7 +46,7 @@ where
         info: &T::TypeInfo,
         selection_set: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<CtxT>>,
-    ) -> Value {
+    ) -> ExecutionResult {
         (**self).resolve(info, selection_set, executor)
     }
 }
@@ -113,7 +112,7 @@ where
         info: &T::TypeInfo,
         selection_set: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<CtxT>>,
-    ) -> Value {
+    ) -> ExecutionResult {
         (**self).resolve(info, selection_set, executor)
     }
 }

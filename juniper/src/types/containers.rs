@@ -4,7 +4,7 @@ use ast::{FromInputValue, InputValue, Selection, ToInputValue};
 use value::Value;
 use schema::meta::MetaType;
 
-use executor::{Executor, Registry};
+use executor::{Executor, Registry, ExecutionResult, resolve_maybe_delayed_iterator};
 use types::base::GraphQLType;
 
 impl<T, CtxT> GraphQLType for Option<T>
@@ -27,10 +27,10 @@ where
         info: &T::TypeInfo,
         _: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<CtxT>>,
-    ) -> Value {
+    ) -> ExecutionResult {
         match *self {
             Some(ref obj) => Executor::resolve_into_value(executor, info, obj),
-            None => Value::null(),
+            None => ExecutionResult::sync_ok(Value::null()),
         }
     }
 }
@@ -82,11 +82,9 @@ where
         info: &T::TypeInfo,
         _: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<CtxT>>,
-    ) -> Value {
-        Value::list(
-            self.iter()
-                .map(|e| Executor::resolve_into_value(executor.clone(), info, e))
-                .collect(),
+    ) -> ExecutionResult {
+        resolve_maybe_delayed_iterator(
+            self.iter().map(|e| Executor::resolve_into_value(executor.clone(), info, e))
         )
     }
 }
@@ -144,11 +142,9 @@ where
         info: &T::TypeInfo,
         _: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<CtxT>>,
-    ) -> Value {
-        Value::list(
-            self.iter()
-                .map(|e| Executor::resolve_into_value(executor.clone(), info, e))
-                .collect(),
+    ) -> ExecutionResult {
+        resolve_maybe_delayed_iterator(
+            self.iter().map(|e| Executor::resolve_into_value(executor.clone(), info, e))
         )
     }
 }

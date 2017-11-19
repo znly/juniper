@@ -171,18 +171,53 @@ pub type ExecutionResult = DelayedResult<Value, FieldError>;
 /// The map of variables used for substitution during query execution
 pub type Variables = HashMap<String, InputValue>;
 
+pub enum SyncResult<T, E> {
+    Ok(T),
+    Err(E),
+}
+
+impl<T, E> SyncResult<T, E> {
+    fn from_result(result: Result<T, E>) -> SyncResult<T, E> {
+        match result {
+            Ok(v) => SyncResult::Ok(v),
+            Err(e) => SyncResult::Err(e),
+        }
+    }
+}
+
+impl<T: GraphQLType<Context=NewCtxT>, NewCtxT: 'static> SyncResult<Option<(Arc<NewCtxT>, T)>, FieldError> {
+    pub fn replace_context_and_resolve<CtxT>(self, info: &T::TypeInfo, executor: &Arc<Executor<CtxT>>) -> ExecutionResult 
+        where T::Context: FromContext<NewCtxT>
+    {
+        match self {
+            SyncResult::Ok(Some((ctx, r))) => 
+                executor.replaced_context(ctx).resolve_with_ctx(info, &r),
+            SyncResult::Ok(None) =>
+                DelayedResult::sync_ok(Value::null()),
+            SyncResult::Err(e) =>
+                DelayedResult::sync_err(e),
+        }
+    }
+}
+
 pub enum DelayedResult<T, E> {
-    SyncOk(T),
-    SyncErr(E),
+    Sync(SyncResult<T, E>),
     Async(Box<Future<Item=T, Error=E>>),
 }
 
 impl<T, E> DelayedResult<T, E> {
-    pub fn from_sync_result(result: Result<T, E>) -> Self {
-        match result {
-            Ok(v) => DelayedResult::SyncOk(v),
-            Err(e) => DelayedResult::SyncErr(e),
-        }
+    pub fn sync_ok(v: T) -> DelayedResult<T, E> {
+        DelayedResult::Sync(SyncResult::Ok(v))
+    }
+
+    pub fn sync_err(e: E) -> DelayedResult<T, E> {
+        DelayedResult::Sync(SyncResult::Err(e))
+    }
+}
+
+impl<T, E> From<SyncResult<T, E>> for DelayedResult<T, E> {
+    fn from(v: SyncResult<T, E>) -> DelayedResult<T, E> {
+        DelayedResult::Sync(v)
     }
 }
 
@@ -191,16 +226,20 @@ type DelayedFieldResult<T> = DelayedResult<T, FieldError>;
 
 #[doc(hidden)]
 pub trait IntoResolvable<T: GraphQLType, C>: Sized {
+    type R: Into<DelayedFieldResult<Option<(Arc<T::Context>, T)>>>;
+
     #[doc(hidden)]
-    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>>;
+    fn into(self, ctx: Arc<C>) -> Self::R;
 }
 
 impl<T: GraphQLType, C> IntoResolvable<T, C> for T
 where
     T::Context: FromContext<C>,
 {
-    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
-        DelayedResult::SyncOk(Some((FromContext::from(ctx), self)))
+    type R = SyncResult<Option<(Arc<T::Context>, T)>, FieldError>;
+
+    fn into(self, ctx: Arc<C>) -> Self::R {
+        SyncResult::Ok(Some((FromContext::from(ctx), self)))
     }
 }
 
@@ -208,32 +247,42 @@ impl<T: GraphQLType, C> IntoResolvable<T, C> for FieldResult<T>
 where
     T::Context: FromContext<C>,
 {
-    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
-        DelayedResult::from_sync_result(self.map(|v| Some((FromContext::from(ctx), v))))
+    type R = SyncResult<Option<(Arc<T::Context>, T)>, FieldError>;
+
+    fn into(self, ctx: Arc<C>) -> Self::R {
+        SyncResult::from_result(self.map(|v| Some((FromContext::from(ctx), v))))
     }
 }
 
 impl<T: GraphQLType, C> IntoResolvable<T, C> for (Arc<T::Context>, T) {
-    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
-        DelayedResult::SyncOk(Some(self))
+    type R = SyncResult<Option<(Arc<T::Context>, T)>, FieldError>;
+
+    fn into(self, _: Arc<C>) -> Self::R {
+        SyncResult::Ok(Some(self))
     }
 }
 
 impl<T: GraphQLType, C> IntoResolvable<Option<T>, C> for Option<(Arc<T::Context>, T)> {
-    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, Option<T>)>> {
-        DelayedResult::SyncOk(self.map(|(ctx, v)| (ctx, Some(v))))
+    type R = SyncResult<Option<(Arc<T::Context>, Option<T>)>, FieldError>;
+
+    fn into(self, _: Arc<C>) -> Self::R {
+        SyncResult::Ok(self.map(|(ctx, v)| (ctx, Some(v))))
     }
 }
 
 impl<T: GraphQLType, C> IntoResolvable<T, C> for FieldResult<(Arc<T::Context>, T)> {
-    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
-        DelayedResult::from_sync_result(self.map(Some))
+    type R = SyncResult<Option<(Arc<T::Context>, T)>, FieldError>;
+
+    fn into(self, _: Arc<C>) -> Self::R {
+        SyncResult::from_result(self.map(Some))
     }
 }
 
 impl<T: GraphQLType, C> IntoResolvable<Option<T>, C> for FieldResult<Option<(Arc<T::Context>, T)>> {
-    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, Option<T>)>> {
-        DelayedResult::from_sync_result(self.map(|o| o.map(|(ctx, v)| (ctx, Some(v)))))
+    type R = SyncResult<Option<(Arc<T::Context>, Option<T>)>, FieldError>;
+
+    fn into(self, _: Arc<C>) -> Self::R {
+        SyncResult::from_result(self.map(|o| o.map(|(ctx, v)| (ctx, Some(v)))))
     }
 }
 
@@ -273,6 +322,20 @@ where
     }
 }
 
+pub fn resolve_maybe_delayed_iterator<I: Iterator<Item=ExecutionResult>>(iter: I) -> ExecutionResult {
+    let mut values = vec![];
+
+    for res in iter {
+        match res {
+            DelayedResult::Sync(SyncResult::Ok(v)) => values.push(v),
+            DelayedResult::Sync(SyncResult::Err(_)) => values.push(Value::null()),
+            DelayedResult::Async(_) => unimplemented!(), // MH: FIXME ASYNC
+        }
+    }
+    
+    DelayedResult::sync_ok(Value::list(values))
+}
+
 impl<CtxT> Executor<CtxT> {
     /// Resolve a single arbitrary value, mapping the context to a new type
     pub fn resolve_with_ctx<NewCtxT: 'static, T: GraphQLType<Context = NewCtxT>>(
@@ -295,7 +358,7 @@ impl<CtxT> Executor<CtxT> {
         info: &T::TypeInfo,
         value: &T,
     ) -> ExecutionResult {
-        DelayedResult::SyncOk(value.resolve(info, this.current_selection_set.as_ref(), this.clone()))
+        value.resolve(info, this.current_selection_set.as_ref(), this.clone())
     }
 
     /// Resolve a single arbitrary value into a return value
@@ -305,15 +368,15 @@ impl<CtxT> Executor<CtxT> {
         this: Arc<Self>,
         info: &T::TypeInfo,
         value: &T,
-    ) -> Value {
+    ) -> ExecutionResult {
         
         match Executor::resolve(this.clone(), info, value) {
-            DelayedResult::SyncOk(v) => v,
-            DelayedResult::SyncErr(e) => {
+            DelayedResult::Sync(SyncResult::Ok(v)) => DelayedResult::sync_ok(v),
+            DelayedResult::Sync(SyncResult::Err(e)) => {
                 this.push_error(e);
-                Value::null()
+                DelayedResult::sync_ok(Value::null())
             },
-            DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
+            DelayedResult::Async(_) => unimplemented!() // MH: FIXME ASYNC
         }
     }
 
@@ -541,7 +604,11 @@ where
     let mut errors = Arc::try_unwrap(errors).unwrap().into_inner().unwrap();
     errors.sort();
 
-    Ok((value, errors))
+    match value {
+        DelayedResult::Sync(SyncResult::Ok(v)) => Ok((v, errors)),
+        DelayedResult::Sync(SyncResult::Err(_)) => Ok((Value::null(), errors)),
+        DelayedResult::Async(_) => unimplemented!(), // MH: FIXME ASYNC
+    }
 }
 
 impl Registry {

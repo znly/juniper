@@ -281,7 +281,7 @@ pub trait GraphQLType: Sized {
         executor: Arc<Executor<Self::Context>>,
     ) -> ExecutionResult {
         if Self::name(info).unwrap() == type_name {
-            ::DelayedResult::SyncOk(self.resolve(info, selection_set, executor))
+            self.resolve(info, selection_set, executor)
         } else {
             panic!("resolve_into_type must be implemented by unions and interfaces");
         }
@@ -310,13 +310,13 @@ pub trait GraphQLType: Sized {
         info: &Self::TypeInfo,
         selection_set: Option<&Arc<Vec<Selection>>>,
         executor: Arc<Executor<Self::Context>>,
-    ) -> Value {
+    ) -> ExecutionResult {
         if let Some(selection_set) = selection_set {
             let mut result = OrderMap::new();
             if resolve_selection_set_into(self, info, selection_set, &executor, &mut result) {
-                Value::object(result)
+                ExecutionResult::sync_ok(Value::object(result))
             } else {
-                Value::null()
+                ExecutionResult::sync_ok(Value::null())
             }
         } else {
             panic!("resolve() must be implemented by non-object output types");
@@ -397,9 +397,11 @@ fn resolve_selection_set_into<T, CtxT>(
                 );
 
                 match field_result {
-                    ::DelayedResult::SyncOk(Value::Null) if meta_field.field_type.is_non_null() => return false,
-                    ::DelayedResult::SyncOk(v) => merge_key_into(result, response_name, v),
-                    ::DelayedResult::SyncErr(e) => {
+                    ::DelayedResult::Sync(::SyncResult::Ok(Value::Null)) if meta_field.field_type.is_non_null() =>
+                        return false,
+                    ::DelayedResult::Sync(::SyncResult::Ok(v)) =>
+                        merge_key_into(result, response_name, v),
+                    ::DelayedResult::Sync(::SyncResult::Err(e)) => {
                         sub_exec.push_error_at(e, start_pos.clone());
 
                         if meta_field.field_type.is_non_null() {
@@ -408,7 +410,7 @@ fn resolve_selection_set_into<T, CtxT>(
 
                         result.insert(response_name.to_string(), Value::null());
                     }
-                    ::DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
+                    ::DelayedResult::Async(_) => unimplemented!() // MH: FIXME ASYNC
                 }
             }
             Selection::FragmentSpread(Spanning {
@@ -453,14 +455,14 @@ fn resolve_selection_set_into<T, CtxT>(
                     );
 
                     match sub_result {
-                        ::DelayedResult::SyncOk(Value::Object(mut hash_map)) =>
+                        ::DelayedResult::Sync(::SyncResult::Ok(Value::Object(mut hash_map))) =>
                             for (k, v) in hash_map.drain(..) {
                                 result.insert(k, v);
                             },
-                        ::DelayedResult::SyncOk(_) => (),
-                        ::DelayedResult::SyncErr(e) =>
+                        ::DelayedResult::Sync(::SyncResult::Ok(_)) => (),
+                        ::DelayedResult::Sync(::SyncResult::Err(e)) =>
                             sub_exec.push_error_at(e, start_pos.clone()),
-                        ::DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
+                        ::DelayedResult::Async(_) => unimplemented!() // MH: FIXME ASYNC
                     }
                 } else {
                     if !resolve_selection_set_into(

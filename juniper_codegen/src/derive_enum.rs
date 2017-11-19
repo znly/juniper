@@ -129,7 +129,7 @@ pub fn impl_enum(ast: &syn::DeriveInput) -> Tokens {
 
         // Build resolve match clause.
         let resolve = quote!{
-            &#ident::#var_ident => ::juniper::Value::String(#name.to_string()),
+            &#ident::#var_ident => ::juniper::ExecutionResult::sync_ok(::juniper::Value::String(#name.to_string())),
         };
         resolves.push(resolve);
 
@@ -164,7 +164,7 @@ pub fn impl_enum(ast: &syn::DeriveInput) -> Tokens {
                 meta.into_meta()
             }
 
-            fn resolve(&self, _: &(), _: Option<&::std::sync::Arc<Vec<::juniper::Selection>>>, _: ::std::sync::Arc<::juniper::Executor<Self::Context>>) -> ::juniper::Value {
+            fn resolve(&self, _: &(), _: Option<&::std::sync::Arc<Vec<::juniper::Selection>>>, _: ::std::sync::Arc<::juniper::Executor<Self::Context>>) -> ::juniper::ExecutionResult {
                 match self {
                     #(#resolves)*
                 }
