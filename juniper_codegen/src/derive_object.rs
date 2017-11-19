@@ -155,7 +155,7 @@ pub fn impl_object(ast: &syn::DeriveInput) -> Tokens {
                 #name.to_string()
             }
 
-            fn meta<'r>(_: &(), registry: &mut ::juniper::Registry<'r>) -> ::juniper::meta::MetaType<'r> {
+            fn meta(_: &(), registry: &mut ::juniper::Registry) -> ::juniper::meta::MetaType {
                 let fields = &[
                     #(#meta_fields)*
                 ];

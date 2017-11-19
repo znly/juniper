@@ -156,7 +156,7 @@ pub fn impl_enum(ast: &syn::DeriveInput) -> Tokens {
                 Some(#name)
             }
 
-            fn meta<'r>(_: &(), registry: &mut ::juniper::Registry<'r>) -> ::juniper::meta::MetaType<'r> {
+            fn meta(_: &(), registry: &mut ::juniper::Registry) -> ::juniper::meta::MetaType {
                 let meta = registry.build_enum_type::<#ident>(&(), &[
                     #(#values)*
                 ]);
