@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ordermap::OrderMap;
 use ordermap::Entry;
 
@@ -256,7 +258,7 @@ pub trait GraphQLType: Sized {
         info: &Self::TypeInfo,
         field_name: &str,
         arguments: &Arguments,
-        executor: &Executor<Self::Context>,
+        executor: Arc<Executor<Self::Context>>,
     ) -> ExecutionResult {
         panic!("resolve_field must be implemented by object types");
     }
@@ -272,11 +274,11 @@ pub trait GraphQLType: Sized {
         &self,
         info: &Self::TypeInfo,
         type_name: &str,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<Self::Context>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<Self::Context>>,
     ) -> ExecutionResult {
         if Self::name(info).unwrap() == type_name {
-            Ok(self.resolve(info, selection_set, executor))
+            ::DelayedResult::SyncOk(self.resolve(info, selection_set, executor))
         } else {
             panic!("resolve_into_type must be implemented by unions and interfaces");
         }
@@ -303,12 +305,12 @@ pub trait GraphQLType: Sized {
     fn resolve(
         &self,
         info: &Self::TypeInfo,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<Self::Context>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<Self::Context>>,
     ) -> Value {
         if let Some(selection_set) = selection_set {
             let mut result = OrderMap::new();
-            if resolve_selection_set_into(self, info, selection_set, executor, &mut result) {
+            if resolve_selection_set_into(self, info, selection_set, &executor, &mut result) {
                 Value::object(result)
             } else {
                 Value::null()
@@ -323,7 +325,7 @@ fn resolve_selection_set_into<T, CtxT>(
     instance: &T,
     info: &T::TypeInfo,
     selection_set: &[Selection],
-    executor: &Executor<CtxT>,
+    executor: &Arc<Executor<CtxT>>,
     result: &mut OrderMap<String, Value>,
 ) -> bool where
     T: GraphQLType<Context = CtxT>,
@@ -371,7 +373,7 @@ fn resolve_selection_set_into<T, CtxT>(
                 let sub_exec = executor.sub_executor(
                     Some(response_name.clone()),
                     start_pos.clone(),
-                    f.selection_set.as_ref().map(|v| &v[..]),
+                    f.selection_set.as_ref().map(|v| Arc::new(v.clone())),
                 );
 
                 let field_result = instance.resolve_field(
@@ -388,13 +390,13 @@ fn resolve_selection_set_into<T, CtxT>(
                         }),
                         &meta_field.arguments,
                     ),
-                    &sub_exec,
+                    sub_exec.clone(),
                 );
 
                 match field_result {
-                    Ok(Value::Null) if meta_field.field_type.is_non_null() => return false,
-                    Ok(v) => merge_key_into(result, response_name, v),
-                    Err(e) => {
+                    ::DelayedResult::SyncOk(Value::Null) if meta_field.field_type.is_non_null() => return false,
+                    ::DelayedResult::SyncOk(v) => merge_key_into(result, response_name, v),
+                    ::DelayedResult::SyncErr(e) => {
                         sub_exec.push_error_at(e, start_pos.clone());
 
                         if meta_field.field_type.is_non_null() {
@@ -403,6 +405,7 @@ fn resolve_selection_set_into<T, CtxT>(
 
                         result.insert(response_name.to_string(), Value::null());
                     }
+                    ::DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
                 }
             }
             Selection::FragmentSpread(Spanning {
@@ -436,22 +439,25 @@ fn resolve_selection_set_into<T, CtxT>(
                 }
 
                 let sub_exec = executor
-                    .sub_executor(None, start_pos.clone(), Some(&fragment.selection_set[..]));
+                    .sub_executor(None, start_pos.clone(), Some(Arc::new(fragment.selection_set.clone())));
 
                 if let Some(ref type_condition) = fragment.type_condition {
                     let sub_result = instance.resolve_into_type(
                         info,
                         &type_condition.item,
-                        Some(&fragment.selection_set[..]),
-                        &sub_exec,
+                        Some(&Arc::new(fragment.selection_set.clone())),
+                        sub_exec.clone(),
                     );
 
-                    if let Ok(Value::Object(mut hash_map)) = sub_result {
-                        for (k, v) in hash_map.drain(..) {
-                            result.insert(k, v);
-                        }
-                    } else if let Err(e) = sub_result {
-                        sub_exec.push_error_at(e, start_pos.clone());
+                    match sub_result {
+                        ::DelayedResult::SyncOk(Value::Object(mut hash_map)) =>
+                            for (k, v) in hash_map.drain(..) {
+                                result.insert(k, v);
+                            },
+                        ::DelayedResult::SyncOk(_) => (),
+                        ::DelayedResult::SyncErr(e) =>
+                            sub_exec.push_error_at(e, start_pos.clone()),
+                        ::DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
                     }
                 } else {
                     if !resolve_selection_set_into(

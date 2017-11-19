@@ -71,11 +71,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn on_object() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment validFragment on Dog {
@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn on_interface() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment validFragment on Pet {
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn on_object_inline() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment validFragment on Pet {
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn on_inline_without_type_cond() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment validFragment on Pet {
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn on_union() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment validFragment on CatOrDog {
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn not_on_scalar() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarFragment on Boolean {
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn not_on_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarFragment on FurColor {
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn not_on_input_object() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment inputFragment on ComplexInput {
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn not_on_scalar_inline() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment invalidFragment on Pet {

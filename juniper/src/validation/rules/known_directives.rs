@@ -142,12 +142,12 @@ mod tests {
     use super::{factory, misplaced_error_message, unknown_error_message};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
     use schema::model::DirectiveLocation;
 
     #[test]
     fn with_no_directives() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn with_known_directives() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn with_unknown_directive() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn with_many_unknown_directives() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn with_well_placed_directives() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo @onQuery {
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     fn with_misplaced_directives() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo @include(if: true) {

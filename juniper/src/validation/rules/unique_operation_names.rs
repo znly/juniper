@@ -45,11 +45,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn no_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment fragA on Type {
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn one_anon_operation() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn one_named_operation() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn multiple_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn multiple_operations_of_different_types() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn fragment_and_operation_named_the_same() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn multiple_operations_of_same_name() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo {
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn multiple_ops_of_same_name_of_different_types() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo {

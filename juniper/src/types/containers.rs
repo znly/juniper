@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ast::{FromInputValue, InputValue, Selection, ToInputValue};
 use value::Value;
 use schema::meta::MetaType;
@@ -23,11 +25,11 @@ where
     fn resolve(
         &self,
         info: &T::TypeInfo,
-        _: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        _: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> Value {
         match *self {
-            Some(ref obj) => executor.resolve_into_value(info, obj),
+            Some(ref obj) => Executor::resolve_into_value(executor, info, obj),
             None => Value::null(),
         }
     }
@@ -78,12 +80,12 @@ where
     fn resolve(
         &self,
         info: &T::TypeInfo,
-        _: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        _: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> Value {
         Value::list(
             self.iter()
-                .map(|e| executor.resolve_into_value(info, e))
+                .map(|e| Executor::resolve_into_value(executor.clone(), info, e))
                 .collect(),
         )
     }
@@ -140,12 +142,12 @@ where
     fn resolve(
         &self,
         info: &T::TypeInfo,
-        _: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        _: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> Value {
         Value::list(
             self.iter()
-                .map(|e| executor.resolve_into_value(info, e))
+                .map(|e| Executor::resolve_into_value(executor.clone(), info, e))
                 .collect(),
         )
     }

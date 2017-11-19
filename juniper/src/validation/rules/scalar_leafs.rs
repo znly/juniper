@@ -55,11 +55,11 @@ mod tests {
     use super::{factory, no_allowed_error_message, required_error_message};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn valid_scalar_selection() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment scalarSelection on Dog {
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn object_type_missing_selection() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query directQueryOnObjectWithoutSubFields {
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn interface_type_missing_selection() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn valid_scalar_selection_with_args() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment scalarSelectionWithArgs on Dog {
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn scalar_selection_not_allowed_on_boolean() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarSelectionsNotAllowedOnBoolean on Dog {
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn scalar_selection_not_allowed_on_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarSelectionsNotAllowedOnEnum on Cat {
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn scalar_selection_not_allowed_with_args() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarSelectionsNotAllowedWithArgs on Dog {
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn scalar_selection_not_allowed_with_directives() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarSelectionsNotAllowedWithDirectives on Dog {
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn scalar_selection_not_allowed_with_directives_and_args() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment scalarSelectionsNotAllowedWithDirectivesAndArgs on Dog {

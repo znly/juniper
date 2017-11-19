@@ -46,11 +46,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn no_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment fragA on Type {
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn one_anon_operation() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn multiple_named_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn anon_operation_with_fragment() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn multiple_anon_operations() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn anon_operation_with_a_mutation() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ast::{FromInputValue, InputValue, Selection, ToInputValue};
 use value::Value;
 
@@ -24,8 +26,8 @@ where
         &self,
         info: &T::TypeInfo,
         name: &str,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> ExecutionResult {
         (**self).resolve_into_type(info, name, selection_set, executor)
     }
@@ -35,7 +37,7 @@ where
         info: &T::TypeInfo,
         field: &str,
         args: &Arguments,
-        executor: &Executor<CtxT>,
+        executor: Arc<Executor<CtxT>>,
     ) -> ExecutionResult {
         (**self).resolve_field(info, field, args, executor)
     }
@@ -43,8 +45,8 @@ where
     fn resolve(
         &self,
         info: &T::TypeInfo,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> Value {
         (**self).resolve(info, selection_set, executor)
     }
@@ -90,8 +92,8 @@ where
         &self,
         info: &T::TypeInfo,
         name: &str,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> ExecutionResult {
         (**self).resolve_into_type(info, name, selection_set, executor)
     }
@@ -101,7 +103,7 @@ where
         info: &T::TypeInfo,
         field: &str,
         args: &Arguments,
-        executor: &Executor<CtxT>,
+        executor: Arc<Executor<CtxT>>,
     ) -> ExecutionResult {
         (**self).resolve_field(info, field, args, executor)
     }
@@ -109,8 +111,8 @@ where
     fn resolve(
         &self,
         info: &T::TypeInfo,
-        selection_set: Option<&[Selection]>,
-        executor: &Executor<CtxT>,
+        selection_set: Option<&Arc<Vec<Selection>>>,
+        executor: Arc<Executor<CtxT>>,
     ) -> Value {
         (**self).resolve(info, selection_set, executor)
     }

@@ -106,11 +106,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn all_fragment_names_are_used() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn all_fragment_names_are_used_by_multiple_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo {
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn contains_unknown_fragments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo {
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn contains_unknown_fragments_with_ref_cycle() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo {
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn contains_unknown_and_undef_fragments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo {

@@ -52,11 +52,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn no_arguments_on_field() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn no_arguments_on_directive() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn argument_on_field() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn argument_on_directive() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn same_argument_on_two_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn same_argument_on_field_and_directive() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn same_argument_on_two_directives() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn multiple_field_arguments() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn multiple_directive_arguments() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn duplicate_field_arguments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn many_duplicate_field_arguments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn duplicate_directive_arguments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn many_duplicate_directive_arguments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {

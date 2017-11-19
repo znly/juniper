@@ -33,11 +33,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn known() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn unknown() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {

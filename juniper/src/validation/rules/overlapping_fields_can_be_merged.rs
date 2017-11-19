@@ -713,12 +713,11 @@ mod tests {
     use schema::meta::MetaType;
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_fails_rule_with_schema, expect_passes_rule,
-                     expect_passes_rule_with_schema, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn unique_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment uniqueFields on Dog {
@@ -731,7 +730,7 @@ mod tests {
 
     #[test]
     fn identical_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment mergeIdenticalFields on Dog {
@@ -744,7 +743,7 @@ mod tests {
 
     #[test]
     fn identical_fields_with_identical_args() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
@@ -757,7 +756,7 @@ mod tests {
 
     #[test]
     fn identical_fields_with_identical_directives() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment mergeSameFieldsWithSameDirectives on Dog {
@@ -770,7 +769,7 @@ mod tests {
 
     #[test]
     fn different_args_with_different_aliases() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment differentArgsWithDifferentAliases on Dog {
@@ -783,7 +782,7 @@ mod tests {
 
     #[test]
     fn different_directives_with_different_aliases() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment differentDirectivesWithDifferentAliases on Dog {
@@ -796,7 +795,7 @@ mod tests {
 
     #[test]
     fn different_skip_include_directives_accepted() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment differentDirectivesWithDifferentAliases on Dog {
@@ -809,7 +808,7 @@ mod tests {
 
     #[test]
     fn same_aliases_with_different_field_targets() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment sameAliasesWithDifferentFieldTargets on Dog {
@@ -834,7 +833,7 @@ mod tests {
 
     #[test]
     fn same_aliases_allowed_on_nonoverlapping_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment sameAliasesWithDifferentFieldTargets on Pet {
@@ -851,7 +850,7 @@ mod tests {
 
     #[test]
     fn alias_masking_direct_field_access() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment aliasMaskingDirectFieldAccess on Dog {
@@ -876,7 +875,7 @@ mod tests {
 
     #[test]
     fn different_args_second_adds_an_argument() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment conflictingArgs on Dog {
@@ -901,7 +900,7 @@ mod tests {
 
     #[test]
     fn different_args_second_missing_an_argument() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment conflictingArgs on Dog {
@@ -926,7 +925,7 @@ mod tests {
 
     #[test]
     fn conflicting_args() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment conflictingArgs on Dog {
@@ -951,7 +950,7 @@ mod tests {
 
     #[test]
     fn allows_different_args_where_no_conflict_is_possible() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment conflictingArgs on Pet {
@@ -968,7 +967,7 @@ mod tests {
 
     #[test]
     fn encounters_conflict_in_fragments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -996,7 +995,7 @@ mod tests {
 
     #[test]
     fn reports_each_conflict_once() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1049,7 +1048,7 @@ mod tests {
 
     #[test]
     fn deep_conflict() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1085,7 +1084,7 @@ mod tests {
 
     #[test]
     fn deep_conflict_with_multiple_issues() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1129,7 +1128,7 @@ mod tests {
 
     #[test]
     fn very_deep_conflict() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1176,7 +1175,7 @@ mod tests {
 
     #[test]
     fn reports_deep_conflict_to_nearest_common_ancestor() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1219,7 +1218,7 @@ mod tests {
 
     #[test]
     fn reports_deep_conflict_to_nearest_common_ancestor_in_fragments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1270,7 +1269,7 @@ mod tests {
 
     #[test]
     fn reports_deep_conflict_in_nested_fragments() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -1326,7 +1325,7 @@ mod tests {
 
     #[test]
     fn ignores_unknown_fragments() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
         {
@@ -1575,7 +1574,7 @@ mod tests {
 
     #[test]
     fn conflicting_return_types_which_potentially_overlap() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1607,7 +1606,7 @@ mod tests {
 
     #[test]
     fn compatible_return_shapes_on_different_return_types() {
-        expect_passes_rule_with_schema(
+        expect_passes_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1631,7 +1630,7 @@ mod tests {
 
     #[test]
     fn disallows_differing_return_types_despite_no_overlap() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1663,7 +1662,7 @@ mod tests {
 
     #[test]
     fn reports_correctly_when_a_non_exclusive_follows_an_exclusive() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1736,7 +1735,7 @@ mod tests {
 
     #[test]
     fn disallows_differing_return_type_nullability_despite_no_overlap() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1770,7 +1769,7 @@ mod tests {
 
     #[test]
     fn disallows_differing_return_type_list_despite_no_overlap() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1805,7 +1804,7 @@ mod tests {
             ],
         );
 
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1843,7 +1842,7 @@ mod tests {
 
     #[test]
     fn disallows_differing_subfields() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1880,7 +1879,7 @@ mod tests {
 
     #[test]
     fn disallows_differing_deep_return_types_despite_no_overlap() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1923,7 +1922,7 @@ mod tests {
 
     #[test]
     fn allows_non_conflicting_overlapping_types() {
-        expect_passes_rule_with_schema(
+        expect_passes_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1943,7 +1942,7 @@ mod tests {
 
     #[test]
     fn same_wrapped_scalar_return_types() {
-        expect_passes_rule_with_schema(
+        expect_passes_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1963,7 +1962,7 @@ mod tests {
 
     #[test]
     fn allows_inline_typeless_fragments() {
-        expect_passes_rule_with_schema(
+        expect_passes_rule!(
             QueryRoot,
             factory,
             r#"
@@ -1979,7 +1978,7 @@ mod tests {
 
     #[test]
     fn compares_deep_types_including_list() {
-        expect_fails_rule_with_schema(
+        expect_fails_rule!(
             QueryRoot,
             factory,
             r#"
@@ -2033,7 +2032,7 @@ mod tests {
 
     #[test]
     fn ignores_unknown_types() {
-        expect_passes_rule_with_schema(
+        expect_passes_rule!(
             QueryRoot,
             factory,
             r#"

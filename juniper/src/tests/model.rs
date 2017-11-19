@@ -1,5 +1,6 @@
 #![allow(missing_docs)]
 
+use std::sync::Arc;
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -152,7 +153,7 @@ impl DroidData {
 }
 
 impl Database {
-    pub fn new() -> Database {
+    pub fn new() -> Arc<Database> {
         let mut humans = HashMap::new();
         let mut droids = HashMap::new();
 
@@ -240,10 +241,10 @@ impl Database {
             ),
         );
 
-        Database {
+        Arc::new(Database {
             humans: humans,
             droids: droids,
-        }
+        })
     }
 
     pub fn get_hero(&self, episode: Option<Episode>) -> &Character {

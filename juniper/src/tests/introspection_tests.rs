@@ -17,10 +17,10 @@ fn test_query_type_name() {
           }
         }"#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &database),
+        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
         Ok((
             Value::object(
                 vec![
@@ -57,10 +57,10 @@ fn test_specific_type_name() {
           }
         }"#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &database),
+        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
         Ok((
             Value::object(
                 vec![
@@ -87,10 +87,10 @@ fn test_specific_object_type_name_and_kind() {
         }
         "#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &database),
+        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
         Ok((
             Value::object(
                 vec![
@@ -123,10 +123,10 @@ fn test_specific_interface_type_name_and_kind() {
         }
         "#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &database),
+        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
         Ok((
             Value::object(
                 vec![
@@ -159,10 +159,10 @@ fn test_documentation() {
         }
         "#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &database),
+        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
         Ok((
             Value::object(
                 vec![
@@ -201,9 +201,9 @@ fn test_possible_types() {
         }
         "#;
     let database = Database::new();
-    let schema = RootNode::new(&database, EmptyMutation::<Database>::new());
+    let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
-    let result = ::execute(doc, None, &schema, &Variables::new(), &database);
+    let result = ::execute(doc, None, &schema, &Variables::new(), database.clone());
 
     println!("Result: {:#?}", result);
 

@@ -54,11 +54,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn known_type_names_are_valid() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($var: String, $required: [String!]!) {
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn unknown_type_names_are_invalid() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($var: JumbledUpLetters) {

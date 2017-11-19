@@ -52,11 +52,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn unique_variable_names() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query A($x: Int, $y: String) { __typename }
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn duplicate_variable_names() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query A($x: Int, $x: Int, $x: String) { __typename }

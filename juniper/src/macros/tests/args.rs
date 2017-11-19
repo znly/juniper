@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use executor::Variables;
 use value::Value;
 use schema::model::RootNode;
@@ -104,7 +106,7 @@ where
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 

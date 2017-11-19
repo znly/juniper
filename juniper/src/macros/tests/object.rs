@@ -1,5 +1,7 @@
-use ordermap::OrderMap;
 use std::marker::PhantomData;
+use std::sync::Arc;
+
+use ordermap::OrderMap;
 
 use ast::InputValue;
 use value::Value;
@@ -113,10 +115,10 @@ graphql_object!(InnerType: InnerContext |&self| {
 
 struct CtxSwitcher;
 graphql_object!(CtxSwitcher: InnerContext |&self| {
-    field ctx_switch_always(&executor) -> (&InnerContext, InnerType) { (executor.context(), InnerType) }
-    field ctx_switch_opt(&executor) -> Option<(&InnerContext, InnerType)> { Some((executor.context(), InnerType)) }
-    field ctx_switch_res(&executor) -> FieldResult<(&InnerContext, InnerType)> { Ok((executor.context(), InnerType)) }
-    field ctx_switch_res_opt(&executor) -> FieldResult<Option<(&InnerContext, InnerType)>> { Ok(Some((executor.context(), InnerType))) }
+    field ctx_switch_always(&executor) -> (Arc<InnerContext>, InnerType) { (executor.arc_context(), InnerType) }
+    field ctx_switch_opt(&executor) -> Option<(Arc<InnerContext>, InnerType)> { Some((executor.arc_context(), InnerType)) }
+    field ctx_switch_res(&executor) -> FieldResult<(Arc<InnerContext>, InnerType)> { Ok((executor.arc_context(), InnerType)) }
+    field ctx_switch_res_opt(&executor) -> FieldResult<Option<(Arc<InnerContext>, InnerType)>> { Ok(Some((executor.arc_context(), InnerType))) }
 });
 
 graphql_object!(<'a> Root: InnerContext as "Root" |&self| {
@@ -169,7 +171,7 @@ where
     ].into_iter()
         .collect();
 
-    let (result, errs) = ::execute(doc, None, &schema, &vars, &InnerContext).expect("Execution failed");
+    let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(InnerContext)).expect("Execution failed");
 
     assert_eq!(errs, []);
 

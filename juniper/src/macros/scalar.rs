@@ -81,8 +81,8 @@ macro_rules! graphql_scalar {
             fn resolve(
                 &$resolve_selfvar,
                 _: &(),
-                _: Option<&[$crate::Selection]>,
-                _: &$crate::Executor<Self::Context>) -> $crate::Value {
+                _: Option<&::std::sync::Arc<Vec<$crate::Selection>>>,
+                _: ::std::sync::Arc<$crate::Executor<Self::Context>>) -> $crate::Value {
                 $resolve_body
             }
         }

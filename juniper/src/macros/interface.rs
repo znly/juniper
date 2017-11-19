@@ -213,7 +213,7 @@ macro_rules! graphql_interface {
 
         $(
             if $typenamearg == (<$srctype as $crate::GraphQLType>::name(&())).unwrap() {
-                return $execarg.resolve(&(), &$resolver);
+                return $crate::Executor::resolve($execarg.clone(), &(), &$resolver);
             }
         )*
 
@@ -256,7 +256,7 @@ macro_rules! graphql_interface {
 
             #[allow(unused_variables)]
             #[allow(unused_mut)]
-            fn resolve_field(&$mainself, info: &(), field: &str, args: &$crate::Arguments, mut executor: &$crate::Executor<Self::Context>) -> $crate::ExecutionResult {
+            fn resolve_field(&$mainself, info: &(), field: &str, args: &$crate::Arguments, mut executor: ::std::sync::Arc<$crate::Executor<Self::Context>>) -> $crate::ExecutionResult {
                 __graphql__build_field_matches!(
                     ($outname, $mainself, field, args, executor),
                     (),
@@ -274,8 +274,8 @@ macro_rules! graphql_interface {
                 &$mainself,
                 _: &(),
                 type_name: &str,
-                _: Option<&[$crate::Selection]>,
-                executor: &$crate::Executor<Self::Context>,
+                _: Option<&::std::sync::Arc<Vec<$crate::Selection>>>,
+                executor: ::std::sync::Arc<$crate::Executor<Self::Context>>,
             )
                 -> $crate::ExecutionResult
             {

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ordermap::OrderMap;
 
 use executor::{ExecutionResult, Executor, Registry, Variables};
@@ -40,9 +42,9 @@ impl GraphQLType for Node {
         _: &Self::TypeInfo,
         field_name: &str,
         _: &Arguments,
-        executor: &Executor<Self::Context>,
+        executor: Arc<Executor<Self::Context>>,
     ) -> ExecutionResult {
-        executor.resolve(&(), &self.attributes.get(field_name).unwrap())
+        Executor::resolve(executor, &(), &self.attributes.get(field_name).unwrap())
     }
 }
 
@@ -67,7 +69,7 @@ fn test_node() {
     let schema = RootNode::new_with_info(node, EmptyMutation::new(), node_info, ());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), &()),
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())),
         Ok((
             Value::object(
                 vec![

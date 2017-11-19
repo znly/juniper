@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use fnv::FnvHashMap;
 
@@ -22,7 +23,7 @@ pub struct RootNode<QueryT: GraphQLType, MutationT: GraphQLType> {
     #[doc(hidden)]
     pub mutation_info: MutationT::TypeInfo,
     #[doc(hidden)]
-    pub schema: SchemaType,
+    pub schema: Arc<SchemaType>,
 }
 
 /// Metadata for a schema
@@ -89,7 +90,7 @@ where
         RootNode {
             query_type: query_obj,
             mutation_type: mutation_obj,
-            schema: SchemaType::new::<QueryT, MutationT>(&query_info, &mutation_info),
+            schema: Arc::new(SchemaType::new::<QueryT, MutationT>(&query_info, &mutation_info)),
             query_info: query_info,
             mutation_info: mutation_info,
         }
@@ -119,7 +120,7 @@ impl SchemaType {
             .innermost_name()
             .to_owned();
 
-        registry.get_type::<SchemaType>(&());
+        registry.get_type::<Arc<SchemaType>>(&());
         directives.insert("skip".to_owned(), DirectiveType::new_skip(&mut registry));
         directives.insert(
             "include".to_owned(),
@@ -127,7 +128,7 @@ impl SchemaType {
         );
 
         let mut meta_fields = vec![
-            registry.field::<SchemaType>("__schema", &()),
+            registry.field::<Arc<SchemaType>>("__schema", &()),
             registry
                 .field::<TypeType>("__type", &())
                 .argument(registry.arg::<String>("name", &())),

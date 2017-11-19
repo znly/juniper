@@ -1,12 +1,9 @@
-use parser::parse_document_source;
 use ast::{FromInputValue, InputValue};
 use types::base::GraphQLType;
 use executor::Registry;
-use types::scalars::{EmptyMutation, ID};
-use schema::model::{DirectiveLocation, DirectiveType, RootNode};
+use types::scalars::ID;
 use schema::meta::{EnumValue, MetaType};
-use validation::{visit, MultiVisitor, MultiVisitorNil, RuleError, ValidatorContext, Visitor};
-use shared_str::SharedStr;
+use validation::RuleError;
 
 struct Being;
 struct Pet;
@@ -25,7 +22,7 @@ struct HumanOrAlien;
 
 struct ComplicatedArgs;
 
-struct QueryRoot;
+pub struct QueryRoot;
 
 #[derive(Debug)]
 enum DogCommand {
@@ -488,111 +485,103 @@ impl GraphQLType for QueryRoot {
     }
 }
 
-pub fn validate<'a, R, V, F>(r: R, q: &'a str, factory: F) -> Vec<RuleError>
-where
-    R: GraphQLType<TypeInfo = ()>,
-    V: Visitor<'a> + 'a,
-    F: Fn() -> V,
-{
-    let mut root = RootNode::new(r, EmptyMutation::<()>::new());
+#[macro_export]
+macro_rules! validate {
+    ($r:expr, $q:expr, $factory:expr) => {
+        {
+            let mut root = $crate::schema::model::RootNode::new($r, $crate::types::scalars::EmptyMutation::<()>::new());
 
-    root.schema.add_directive(DirectiveType::new(
-        "onQuery",
-        &[DirectiveLocation::Query],
-        &[],
-    ));
-    root.schema.add_directive(DirectiveType::new(
-        "onMutation",
-        &[DirectiveLocation::Mutation],
-        &[],
-    ));
-    root.schema.add_directive(DirectiveType::new(
-        "onField",
-        &[DirectiveLocation::Field],
-        &[],
-    ));
-    root.schema.add_directive(DirectiveType::new(
-        "onFragmentDefinition",
-        &[DirectiveLocation::FragmentDefinition],
-        &[],
-    ));
-    root.schema.add_directive(DirectiveType::new(
-        "onFragmentSpread",
-        &[DirectiveLocation::FragmentSpread],
-        &[],
-    ));
-    root.schema.add_directive(DirectiveType::new(
-        "onInlineFragment",
-        &[DirectiveLocation::InlineFragment],
-        &[],
-    ));
+            {
+                let schema = ::std::sync::Arc::get_mut(&mut root.schema).expect("Schema not uniquely pointed to");
 
-    let source = SharedStr::clone_from_str(q);
-    let doc = parse_document_source(source).expect(&format!("Parse error on input {:#?}", q));
-    let mut ctx = ValidatorContext::new(unsafe { ::std::mem::transmute(&root.schema) }, &doc);
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onQuery",
+                    &[$crate::schema::model::DirectiveLocation::Query],
+                    &[],
+                ));
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onMutation",
+                    &[$crate::schema::model::DirectiveLocation::Mutation],
+                    &[],
+                ));
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onField",
+                    &[$crate::schema::model::DirectiveLocation::Field],
+                    &[],
+                ));
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onFragmentDefinition",
+                    &[$crate::schema::model::DirectiveLocation::FragmentDefinition],
+                    &[],
+                ));
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onFragmentSpread",
+                    &[$crate::schema::model::DirectiveLocation::FragmentSpread],
+                    &[],
+                ));
+                schema.add_directive($crate::schema::model::DirectiveType::new(
+                    "onInlineFragment",
+                    &[$crate::schema::model::DirectiveLocation::InlineFragment],
+                    &[],
+                ));
+            }
 
-    let mut mv = MultiVisitorNil.with(factory());
-    visit(&mut mv, &mut ctx, unsafe { ::std::mem::transmute(&doc) });
+            let q = $q;
+            let source = $crate::shared_str::SharedStr::clone_from_str(q);
+            let doc = $crate::parser::parse_document_source(source).expect(&format!("Parse error on input {:#?}", q));
+            let mut ctx = $crate::validation::ValidatorContext::new(&root.schema, &doc);
 
-    ctx.into_errors()
-}
+            {
+                let mut mv = $crate::validation::MultiVisitor::with($crate::validation::MultiVisitorNil, $factory());
+                $crate::validation::visit(&mut mv, &mut ctx, &doc);
+            }
 
-pub fn expect_passes_rule<'a, V, F>(factory: F, q: &'a str)
-where
-    V: Visitor<'a> + 'a,
-    F: Fn() -> V,
-{
-    expect_passes_rule_with_schema(QueryRoot, factory, q);
-}
-
-pub fn expect_passes_rule_with_schema<'a, R, V, F>(r: R, factory: F, q: &'a str)
-where
-    R: GraphQLType<TypeInfo = ()>,
-    V: Visitor<'a> + 'a,
-    F: Fn() -> V,
-{
-    let errs = validate(r, q, factory);
-
-    if !errs.is_empty() {
-        print_errors(&errs);
-        panic!("Expected rule to pass, but errors found");
+            ctx.into_errors()
+        }
     }
 }
 
-pub fn expect_fails_rule<'a, V, F>(factory: F, q: &'a str, expected_errors: &[RuleError])
-where
-    V: Visitor<'a> + 'a,
-    F: Fn() -> V,
-{
-    expect_fails_rule_with_schema(QueryRoot, factory, q, expected_errors);
-}
+#[macro_export]
+macro_rules! expect_passes_rule {
+    ($factory:expr, $q:expr $(,)*) => {
+        expect_passes_rule!($crate::validation::test_harness::QueryRoot, $factory, $q);
+    };
+    ($r:expr, $factory:expr, $q:expr $(,)*) => {
+        {
+            let errs = validate!($r, $q, $factory);
 
-pub fn expect_fails_rule_with_schema<'a, R, V, F>(
-    r: R,
-    factory: F,
-    q: &'a str,
-    expected_errors: &[RuleError],
-) where
-    R: GraphQLType<TypeInfo = ()>,
-    V: Visitor<'a> + 'a,
-    F: Fn() -> V,
-{
-    let errs = validate(r, q, factory);
-
-    if errs.is_empty() {
-        panic!("Expected rule to fail, but no errors were found");
-    } else if errs != expected_errors {
-        println!("==> Expected errors:");
-        print_errors(expected_errors);
-
-        println!("\n==> Actual errors:");
-        print_errors(&errs);
-
-        panic!("Unexpected set of errors found");
+            if !errs.is_empty() {
+                $crate::validation::test_harness::print_errors(&errs);
+                panic!("Expected rule to pass, but errors found");
+            }
+        }
     }
 }
 
-fn print_errors(errs: &[RuleError]) {
+#[macro_export]
+macro_rules! expect_fails_rule {
+    ($factory:expr, $q:expr, $expected_errors:expr $(,)*) => {
+        expect_fails_rule!($crate::validation::test_harness::QueryRoot, $factory, $q, $expected_errors);
+    };
+    ($r:expr, $factory:expr, $q:expr, $expected_errors:expr $(,)*) => {
+        let errs = validate!($r, $q, $factory);
+        let expected_errors = $expected_errors;
+
+        if errs.is_empty() {
+            panic!("Expected rule to fail, but no errors were found");
+        } else if errs != expected_errors {
+            println!("==> Expected errors:");
+            $crate::validation::test_harness::print_errors(expected_errors);
+
+            println!("\n==> Actual errors:");
+            $crate::validation::test_harness::print_errors(&errs);
+
+            panic!("Unexpected set of errors found");
+        }
+    }
+}
+
+pub fn print_errors(errs: &[RuleError]) {
     for err in errs {
         for p in err.locations() {
             print!("[{:>3},{:>3},{:>3}]  ", p.index(), p.line(), p.column());

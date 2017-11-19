@@ -61,11 +61,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn input_object_with_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn same_input_object_within_two_args() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn multiple_input_object_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn allows_for_nested_input_objects_with_similar_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn duplicate_input_object_fields() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn many_duplicate_input_object_fields() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {

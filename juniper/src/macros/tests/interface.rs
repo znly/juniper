@@ -1,5 +1,7 @@
-use ordermap::OrderMap;
+use std::sync::Arc;
 use std::marker::PhantomData;
+
+use ordermap::OrderMap;
 
 use ast::InputValue;
 use value::Value;
@@ -154,7 +156,7 @@ where
     ].into_iter()
         .collect();
 
-    let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+    let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 

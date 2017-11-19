@@ -136,7 +136,10 @@ extern crate url;
 #[cfg(any(test, feature = "uuid"))]
 extern crate uuid;
 
+extern crate futures;
+
 use std::borrow::Cow;
+use std::sync::Arc;
 
 mod shared_str;
 #[macro_use]
@@ -173,7 +176,7 @@ pub use ast::{FromInputValue, InputValue, Selection, ToInputValue, Type};
 pub use value::Value;
 pub use types::base::{Arguments, GraphQLType, TypeKind};
 pub use executor::{Context, ExecutionError, ExecutionResult, Executor, FieldError, FieldResult,
-                   FromContext, IntoResolvable, Registry, Variables};
+                   DelayedResult, FromContext, IntoResolvable, Registry, Variables};
 pub use validation::RuleError;
 pub use types::scalars::{EmptyMutation, ID};
 pub use schema::model::RootNode;
@@ -193,12 +196,12 @@ pub enum GraphQLError {
 }
 
 /// Execute a query in a provided schema
-pub fn execute<'a, CtxT, QueryT, MutationT>(
-    document_source: &'a str,
+pub fn execute<CtxT: 'static, QueryT, MutationT>(
+    document_source: &str,
     operation_name: Option<&str>,
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
-    context: &CtxT,
+    context: Arc<CtxT>,
 ) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
 where
     QueryT: GraphQLType<Context = CtxT>,

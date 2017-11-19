@@ -41,11 +41,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn input_types_are_valid() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String, $b: [Boolean!]!, $c: ComplexInput) {
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn output_types_are_invalid() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($a: Dog, $b: [[CatOrDog!]]!, $c: Pet) {

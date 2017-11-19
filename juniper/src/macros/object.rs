@@ -408,7 +408,7 @@ macro_rules! graphql_object {
                 info: &(),
                 field: &str,
                 args: &$crate::Arguments,
-                executor: &$crate::Executor<Self::Context>
+                executor: ::std::sync::Arc<$crate::Executor<Self::Context>>
             )
                 -> $crate::ExecutionResult
             {

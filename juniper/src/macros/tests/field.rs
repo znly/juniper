@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ordermap::OrderMap;
 
 use value::Value;
@@ -79,7 +81,7 @@ where
     ].into_iter()
         .collect();
 
-    let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+    let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 

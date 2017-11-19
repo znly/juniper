@@ -1,4 +1,6 @@
 mod interface {
+    use std::sync::Arc;
+
     use value::Value;
     use schema::model::RootNode;
     use types::scalars::EmptyMutation;
@@ -101,7 +103,7 @@ mod interface {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -128,6 +130,8 @@ mod interface {
 
 
 mod union {
+    use std::sync::Arc;
+    
     use value::Value;
     use schema::model::RootNode;
     use types::scalars::EmptyMutation;
@@ -217,7 +221,7 @@ mod union {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 

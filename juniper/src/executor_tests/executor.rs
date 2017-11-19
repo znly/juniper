@@ -1,4 +1,6 @@
 mod field_execution {
+    use std::sync::Arc;
+
     use value::Value;
     use ast::InputValue;
     use schema::model::RootNode;
@@ -66,7 +68,7 @@ mod field_execution {
         ].into_iter()
             .collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -108,6 +110,8 @@ mod field_execution {
 
 
 mod merge_parallel_fragments {
+    use std::sync::Arc;
+
     use value::Value;
     use schema::model::RootNode;
     use types::scalars::EmptyMutation;
@@ -137,7 +141,7 @@ mod merge_parallel_fragments {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -162,6 +166,8 @@ mod merge_parallel_fragments {
 }
 
 mod threads_context_correctly {
+    use std::sync::Arc;
+
     use value::Value;
     use types::scalars::EmptyMutation;
     use schema::model::RootNode;
@@ -191,9 +197,9 @@ mod threads_context_correctly {
             None,
             &schema,
             &vars,
-            &TestContext {
+            Arc::new(TestContext {
                 value: "Context value".to_owned(),
-            },
+            }),
         ).expect("Execution failed");
 
         assert_eq!(errs, []);
@@ -209,6 +215,8 @@ mod threads_context_correctly {
 }
 
 mod dynamic_context_switching {
+    use std::sync::Arc;
+
     use ordermap::OrderMap;
 
     use value::Value;
@@ -225,7 +233,7 @@ mod dynamic_context_switching {
     }
 
     struct OuterContext {
-        items: OrderMap<i32, InnerContext>,
+        items: OrderMap<i32, Arc<InnerContext>>,
     }
 
     impl Context for OuterContext {}
@@ -234,29 +242,29 @@ mod dynamic_context_switching {
     struct ItemRef;
 
     graphql_object!(Schema: OuterContext |&self| {
-        field item_opt(&executor, key: i32) -> Option<(&InnerContext, ItemRef)> {
-            executor.context().items.get(&key).map(|c| (c, ItemRef))
+        field item_opt(&executor, key: i32) -> Option<(Arc<InnerContext>, ItemRef)> {
+            executor.context().items.get(&key).map(|c| (c.clone(), ItemRef))
         }
 
-        field item_res(&executor, key: i32) -> FieldResult<(&InnerContext, ItemRef)> {
+        field item_res(&executor, key: i32) -> FieldResult<(Arc<InnerContext>, ItemRef)> {
             executor.context().items.get(&key)
                 .ok_or(format!("Could not find key {}", key))
-                .map(|c| (c, ItemRef))
+                .map(|c| (c.clone(), ItemRef))
                 .to_field_result()
         }
 
-        field item_res_opt(&executor, key: i32) -> FieldResult<Option<(&InnerContext, ItemRef)>> {
+        field item_res_opt(&executor, key: i32) -> FieldResult<Option<(Arc<InnerContext>, ItemRef)>> {
             if key > 100 {
                 Err(format!("Key too large: {}", key)).to_field_result()
             } else {
                 Ok(executor.context().items.get(&key)
-                   .map(|c| (c, ItemRef)))
+                   .map(|c| (c.clone(), ItemRef)))
             }
         }
 
-        field item_always(&executor, key: i32) -> (&InnerContext, ItemRef) {
+        field item_always(&executor, key: i32) -> (Arc<InnerContext>, ItemRef) {
             executor.context().items.get(&key)
-                .map(|c| (c, ItemRef))
+                .map(|c| (c.clone(), ItemRef))
                 .unwrap()
         }
     });
@@ -272,15 +280,15 @@ mod dynamic_context_switching {
 
         let vars = vec![].into_iter().collect();
 
-        let ctx = OuterContext {
+        let ctx = Arc::new(OuterContext {
             items: vec![
-                (0, InnerContext { value: "First value".to_owned() }),
-                (1, InnerContext { value: "Second value".to_owned() }),
+                (0, Arc::new(InnerContext { value: "First value".to_owned() })),
+                (1, Arc::new(InnerContext { value: "Second value".to_owned() })),
             ].into_iter()
                 .collect(),
-        };
+        });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &ctx).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -307,15 +315,15 @@ mod dynamic_context_switching {
 
         let vars = vec![].into_iter().collect();
 
-        let ctx = OuterContext {
+        let ctx = Arc::new(OuterContext {
             items: vec![
-                (0, InnerContext { value: "First value".to_owned() }),
-                (1, InnerContext { value: "Second value".to_owned() }),
+                (0, Arc::new(InnerContext { value: "First value".to_owned() })),
+                (1, Arc::new(InnerContext { value: "Second value".to_owned() })),
             ].into_iter()
                 .collect(),
-        };
+        });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &ctx).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
 
         assert_eq!(errs, vec![]);
 
@@ -341,15 +349,15 @@ mod dynamic_context_switching {
 
         let vars = vec![].into_iter().collect();
 
-        let ctx = OuterContext {
+        let ctx = Arc::new(OuterContext {
             items: vec![
-                (0, InnerContext { value: "First value".to_owned() }),
-                (1, InnerContext { value: "Second value".to_owned() }),
+                (0, Arc::new(InnerContext { value: "First value".to_owned() })),
+                (1, Arc::new(InnerContext { value: "Second value".to_owned() })),
             ].into_iter()
                 .collect(),
-        };
+        });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &ctx).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
 
         assert_eq!(errs, vec![
             ExecutionError::new(
@@ -377,15 +385,15 @@ mod dynamic_context_switching {
 
         let vars = vec![].into_iter().collect();
 
-        let ctx = OuterContext {
+        let ctx = Arc::new(OuterContext {
             items: vec![
-                (0, InnerContext { value: "First value".to_owned() }),
-                (1, InnerContext { value: "Second value".to_owned() }),
+                (0, Arc::new(InnerContext { value: "First value".to_owned() })),
+                (1, Arc::new(InnerContext { value: "Second value".to_owned() })),
             ].into_iter()
                 .collect(),
-        };
+        });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &ctx).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
 
         assert_eq!(errs, [
             ExecutionError::new(
@@ -415,15 +423,15 @@ mod dynamic_context_switching {
 
         let vars = vec![].into_iter().collect();
 
-        let ctx = OuterContext {
+        let ctx = Arc::new(OuterContext {
             items: vec![
-                (0, InnerContext { value: "First value".to_owned() }),
-                (1, InnerContext { value: "Second value".to_owned() }),
+                (0, Arc::new(InnerContext { value: "First value".to_owned() })),
+                (1, Arc::new(InnerContext { value: "Second value".to_owned() })),
             ].into_iter()
                 .collect(),
-        };
+        });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &ctx).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -440,6 +448,8 @@ mod dynamic_context_switching {
 }
 
 mod propagates_errors_to_nullable_fields {
+    use std::sync::Arc;
+
     use value::Value;
     use schema::model::RootNode;
     use executor::{ExecutionError, FieldError, FieldResult};
@@ -467,7 +477,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -493,7 +503,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -519,7 +529,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -545,7 +555,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -571,7 +581,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -592,6 +602,8 @@ mod propagates_errors_to_nullable_fields {
 }
 
 mod named_operations {
+    use std::sync::Arc;
+
     use value::Value;
     use schema::model::RootNode;
     use types::scalars::EmptyMutation;
@@ -610,7 +622,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -628,7 +640,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, &()).expect("Execution failed");
+        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -647,7 +659,7 @@ mod named_operations {
         let vars = vec![].into_iter().collect();
 
         let (result, errs) =
-            ::execute(doc, Some("OtherExample"), &schema, &vars, &()).expect("Execution failed");
+            ::execute(doc, Some("OtherExample"), &schema, &vars, Arc::new(())).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -665,7 +677,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let err = ::execute(doc, None, &schema, &vars, &()).unwrap_err();
+        let err = ::execute(doc, None, &schema, &vars, Arc::new(())).unwrap_err();
 
         assert_eq!(err, GraphQLError::MultipleOperationsProvided);
     }
@@ -677,7 +689,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let err = ::execute(doc, Some("UnknownExample"), &schema, &vars, &()).unwrap_err();
+        let err = ::execute(doc, Some("UnknownExample"), &schema, &vars, Arc::new(())).unwrap_err();
 
         assert_eq!(err, GraphQLError::UnknownOperationName);
     }

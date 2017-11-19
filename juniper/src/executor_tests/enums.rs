@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ordermap::OrderMap;
 
 use value::Value;
@@ -39,7 +41,7 @@ where
 {
     let schema = RootNode::new(TestType, EmptyMutation::<()>::new());
 
-    let (result, errs) = ::execute(query, None, &schema, &vars, &()).expect("Execution failed");
+    let (result, errs) = ::execute(query, None, &schema, &vars, Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -82,7 +84,7 @@ fn does_not_accept_string_literals() {
     let query = r#"{ toString(color: "RED") }"#;
     let vars = vec![].into_iter().collect();
 
-    let error = ::execute(query, None, &schema, &vars, &()).unwrap_err();
+    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -118,7 +120,7 @@ fn does_not_accept_incorrect_enum_name_in_variables() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, &()).unwrap_err();
+    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -138,7 +140,7 @@ fn does_not_accept_incorrect_type_in_variables() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, &()).unwrap_err();
+    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(

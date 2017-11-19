@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use executor::Variables;
 use value::Value;
 use schema::model::RootNode;
@@ -70,7 +72,7 @@ fn test_execution() {
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -107,7 +109,7 @@ fn enum_introspection() {
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -190,7 +192,7 @@ fn interface_introspection() {
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -298,7 +300,7 @@ fn object_introspection() {
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -415,7 +417,7 @@ fn scalar_introspection() {
     let schema = RootNode::new(Root {}, EmptyMutation::<()>::new());
 
     let (result, errs) =
-        ::execute(doc, None, &schema, &Variables::new(), &()).expect("Execution failed");
+        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())).expect("Execution failed");
 
     assert_eq!(errs, []);
 

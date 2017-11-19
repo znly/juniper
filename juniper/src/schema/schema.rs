@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use types::base::{Arguments, GraphQLType, TypeKind};
 use executor::{ExecutionResult, Executor, Registry};
 
@@ -26,24 +28,24 @@ where
         info: &QueryT::TypeInfo,
         field: &str,
         args: &Arguments,
-        executor: &Executor<CtxT>,
+        executor: ::std::sync::Arc<Executor<CtxT>>,
     ) -> ExecutionResult {
         match field {
-            "__schema" => executor
-                .replaced_context(&self.schema)
-                .resolve(&(), &self.schema),
+            "__schema" => Executor::resolve(
+                executor.replaced_context(self.schema.clone()),
+                &(), &self.schema),
             "__type" => {
                 let type_name: String = args.get("name").unwrap();
-                executor
-                    .replaced_context(&self.schema)
-                    .resolve(&(), &self.schema.type_by_name(&type_name))
+                Executor::resolve(
+                    executor.replaced_context(self.schema.clone()),
+                    &(), &self.schema.type_by_name(&type_name))
             }
             _ => self.query_type.resolve_field(info, field, args, executor),
         }
     }
 }
 
-graphql_object!(SchemaType: SchemaType as "__Schema" |&self| {
+graphql_object!(Arc<SchemaType>: SchemaType as "__Schema" |&self| {
     field types() -> Vec<TypeType> {
         self.type_list()
             .into_iter()

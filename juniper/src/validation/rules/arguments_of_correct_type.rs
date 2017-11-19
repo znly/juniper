@@ -72,11 +72,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn good_null_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn null_into_int() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn good_int_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn good_boolean_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn good_string_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn good_float_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn int_into_float() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn int_into_id() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn string_into_id() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn good_enum_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn int_into_string() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn float_into_string() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn boolean_into_string() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn unquoted_string_into_string() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn string_into_int() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn unquoted_string_into_int() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn simple_float_into_int() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn float_into_int() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn string_into_float() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn boolean_into_float() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn unquoted_into_float() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -442,7 +442,7 @@ mod tests {
 
     #[test]
     fn int_into_boolean() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn float_into_boolean() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -482,7 +482,7 @@ mod tests {
 
     #[test]
     fn string_into_boolean() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn unquoted_into_boolean() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -522,7 +522,7 @@ mod tests {
 
     #[test]
     fn float_into_id() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn boolean_into_id() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -562,7 +562,7 @@ mod tests {
 
     #[test]
     fn unquoted_into_id() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -582,7 +582,7 @@ mod tests {
 
     #[test]
     fn int_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -602,7 +602,7 @@ mod tests {
 
     #[test]
     fn float_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -622,7 +622,7 @@ mod tests {
 
     #[test]
     fn string_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn boolean_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -662,7 +662,7 @@ mod tests {
 
     #[test]
     fn unknown_enum_value_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -682,7 +682,7 @@ mod tests {
 
     #[test]
     fn different_case_enum_value_into_enum() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -702,7 +702,7 @@ mod tests {
 
     #[test]
     fn good_list_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -716,7 +716,7 @@ mod tests {
 
     #[test]
     fn empty_list_value() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -730,7 +730,7 @@ mod tests {
 
     #[test]
     fn single_value_into_list() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -744,7 +744,7 @@ mod tests {
 
     #[test]
     fn incorrect_item_type() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -764,7 +764,7 @@ mod tests {
 
     #[test]
     fn single_value_of_incorrect_type() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -784,7 +784,7 @@ mod tests {
 
     #[test]
     fn arg_on_optional_arg() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -798,7 +798,7 @@ mod tests {
 
     #[test]
     fn no_arg_on_optional_arg() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -812,7 +812,7 @@ mod tests {
 
     #[test]
     fn multiple_args() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -826,7 +826,7 @@ mod tests {
 
     #[test]
     fn multiple_args_reverse_order() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -840,7 +840,7 @@ mod tests {
 
     #[test]
     fn no_args_on_multiple_optional() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -854,7 +854,7 @@ mod tests {
 
     #[test]
     fn one_arg_on_multiple_optional() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -868,7 +868,7 @@ mod tests {
 
     #[test]
     fn second_arg_on_multiple_optional() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -882,7 +882,7 @@ mod tests {
 
     #[test]
     fn multiple_reqs_on_mixed_list() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -896,7 +896,7 @@ mod tests {
 
     #[test]
     fn multiple_reqs_and_one_opt_on_mixed_list() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -910,7 +910,7 @@ mod tests {
 
     #[test]
     fn all_reqs_and_opts_on_mixed_list() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -924,7 +924,7 @@ mod tests {
 
     #[test]
     fn incorrect_value_type() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -948,7 +948,7 @@ mod tests {
 
     #[test]
     fn incorrect_value_and_missing_argument() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -968,7 +968,7 @@ mod tests {
 
     #[test]
     fn optional_arg_despite_required_field_in_type() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -982,7 +982,7 @@ mod tests {
 
     #[test]
     fn partial_object_only_required() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -996,7 +996,7 @@ mod tests {
 
     #[test]
     fn partial_object_required_field_can_be_falsy() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -1010,7 +1010,7 @@ mod tests {
 
     #[test]
     fn partial_object_including_required() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -1024,7 +1024,7 @@ mod tests {
 
     #[test]
     fn full_object() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -1044,7 +1044,7 @@ mod tests {
 
     #[test]
     fn full_object_with_fields_in_different_order() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -1064,7 +1064,7 @@ mod tests {
 
     #[test]
     fn partial_object_missing_required() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -1084,7 +1084,7 @@ mod tests {
 
     #[test]
     fn partial_object_invalid_field_type() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -1107,7 +1107,7 @@ mod tests {
 
     #[test]
     fn partial_object_unknown_field_arg() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
             {
@@ -1130,7 +1130,7 @@ mod tests {
 
     #[test]
     fn directive_with_valid_types() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
             {
@@ -1147,7 +1147,7 @@ mod tests {
 
     #[test]
     fn directive_with_incorrect_types() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
         {

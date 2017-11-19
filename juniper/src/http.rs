@@ -1,5 +1,7 @@
 //! Utilities for building HTTP endpoints in a library-agnostic manner
 
+use std::sync::Arc;
+
 use serde::ser;
 use serde::ser::SerializeMap;
 
@@ -57,10 +59,10 @@ impl GraphQLRequest {
     ///
     /// This is a simple wrapper around the `execute` function exposed at the
     /// top level of this crate.
-    pub fn execute<'a, CtxT, QueryT, MutationT>(
-        &'a self,
+    pub fn execute<CtxT: 'static, QueryT, MutationT>(
+        &self,
         root_node: &RootNode<QueryT, MutationT>,
-        context: &CtxT,
+        context: Arc<CtxT>,
     ) -> GraphQLResponse
     where
         QueryT: GraphQLType<Context = CtxT>,

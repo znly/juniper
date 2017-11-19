@@ -80,7 +80,7 @@ macro_rules! graphql_union {
 
         $(
             if $typenamearg == (<$srctype as $crate::GraphQLType>::name(&())).unwrap().to_owned() {
-                return $execarg.resolve(&(), &$resolver);
+                return $crate::Executor::resolve($execarg, &(), &$resolver);
             }
         )*
 
@@ -139,8 +139,8 @@ macro_rules! graphql_union {
                 &$mainself,
                 _: &(),
                 type_name: &str,
-                _: Option<&[$crate::Selection]>,
-                executor: &$crate::Executor<Self::Context>,
+                _: Option<&::std::sync::Arc<Vec<$crate::Selection>>>,
+                executor: ::std::sync::Arc<$crate::Executor<Self::Context>>,
             )
                 -> $crate::ExecutionResult
             {

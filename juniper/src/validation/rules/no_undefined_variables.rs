@@ -164,11 +164,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn all_variables_defined() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String, $c: String) {
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn all_variables_deeply_defined() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String, $c: String) {
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn all_variables_deeply_defined_in_inline_fragments_defined() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String, $c: String) {
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn all_variables_in_fragments_deeply_defined() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String, $c: String) {
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn variable_within_single_fragment_defined_in_multiple_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String) {
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn variable_within_fragments_defined_in_operations() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String) {
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn variable_within_recursive_fragment_defined() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           query Foo($a: String) {
@@ -297,7 +297,7 @@ mod tests {
 
     #[test]
     fn variable_not_defined() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String, $c: String) {
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn variable_not_defined_by_unnamed_query() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn multiple_variables_not_defined() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($b: String) {
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn variable_in_fragment_not_defined_by_unnamed_query() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn variable_in_fragment_not_defined_by_operation() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($a: String, $b: String) {
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn multiple_variables_in_fragments_not_defined() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($b: String) {
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn single_variable_in_fragment_not_defined_by_multiple_operations() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($a: String) {
@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn variables_in_fragment_not_defined_by_multiple_operations() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($b: String) {
@@ -534,7 +534,7 @@ mod tests {
 
     #[test]
     fn variable_in_fragment_used_by_other_operation() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($b: String) {
@@ -571,7 +571,7 @@ mod tests {
 
     #[test]
     fn multiple_undefined_variables_produce_multiple_errors() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           query Foo($b: String) {

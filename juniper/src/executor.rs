@@ -1,9 +1,10 @@
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use fnv::FnvHashMap;
+use futures::Future;
 
 use GraphQLError;
 use ast::{Definition, Document, Fragment, FromInputValue, InputValue, OperationType, Selection,
@@ -30,26 +31,26 @@ pub struct Registry {
 }
 
 #[derive(Clone)]
-pub enum FieldPath<'a> {
+pub enum FieldPath {
     Root(SourcePosition),
-    Field(SharedStr, SourcePosition, &'a FieldPath<'a>),
+    Field(SharedStr, SourcePosition, Arc<FieldPath>),
 }
 
 /// Query execution engine
 ///
 /// The executor helps drive the query execution in a schema. It keeps track
 /// of the current field stack, context, variables, and errors.
-pub struct Executor<'a, CtxT>
+pub struct Executor<CtxT>
 where
-    CtxT: 'a,
+    CtxT: 'static,
 {
-    fragments: &'a HashMap<SharedStr, &'a Fragment>,
-    variables: &'a Variables,
-    current_selection_set: Option<&'a [Selection]>,
-    schema: &'a SchemaType,
-    context: &'a CtxT,
-    errors: &'a RwLock<Vec<ExecutionError>>,
-    field_path: FieldPath<'a>,
+    fragments: Arc<HashMap<SharedStr, Arc<Fragment>>>,
+    variables: Arc<Variables>,
+    current_selection_set: Option<Arc<Vec<Selection>>>,
+    schema: Arc<SchemaType>,
+    context: Arc<CtxT>,
+    errors: Arc<RwLock<Vec<ExecutionError>>>,
+    field_path: Arc<FieldPath>,
 }
 
 /// Error type for errors that occur during query execution
@@ -165,56 +166,74 @@ impl FieldError {
 pub type FieldResult<T> = Result<T, FieldError>;
 
 /// The result of resolving an unspecified field
-pub type ExecutionResult = Result<Value, FieldError>;
+pub type ExecutionResult = DelayedResult<Value, FieldError>;
 
 /// The map of variables used for substitution during query execution
 pub type Variables = HashMap<String, InputValue>;
 
+pub enum DelayedResult<T, E> {
+    SyncOk(T),
+    SyncErr(E),
+    Async(Box<Future<Item=T, Error=E>>),
+}
+
+impl<T, E> DelayedResult<T, E> {
+    pub fn from_sync_result(result: Result<T, E>) -> Self {
+        match result {
+            Ok(v) => DelayedResult::SyncOk(v),
+            Err(e) => DelayedResult::SyncErr(e),
+        }
+    }
+}
+
+type DelayedFieldResult<T> = DelayedResult<T, FieldError>;
+
+
 #[doc(hidden)]
-pub trait IntoResolvable<'a, T: GraphQLType, C>: Sized {
+pub trait IntoResolvable<T: GraphQLType, C>: Sized {
     #[doc(hidden)]
-    fn into(self, ctx: &'a C) -> FieldResult<Option<(&'a T::Context, T)>>;
+    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>>;
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, T, C> for T
+impl<T: GraphQLType, C> IntoResolvable<T, C> for T
 where
     T::Context: FromContext<C>,
 {
-    fn into(self, ctx: &'a C) -> FieldResult<Option<(&'a T::Context, T)>> {
-        Ok(Some((FromContext::from(ctx), self)))
+    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
+        DelayedResult::SyncOk(Some((FromContext::from(ctx), self)))
     }
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, T, C> for FieldResult<T>
+impl<T: GraphQLType, C> IntoResolvable<T, C> for FieldResult<T>
 where
     T::Context: FromContext<C>,
 {
-    fn into(self, ctx: &'a C) -> FieldResult<Option<(&'a T::Context, T)>> {
-        self.map(|v| Some((FromContext::from(ctx), v)))
+    fn into(self, ctx: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
+        DelayedResult::from_sync_result(self.map(|v| Some((FromContext::from(ctx), v))))
     }
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, T, C> for (&'a T::Context, T) {
-    fn into(self, _: &'a C) -> FieldResult<Option<(&'a T::Context, T)>> {
-        Ok(Some(self))
+impl<T: GraphQLType, C> IntoResolvable<T, C> for (Arc<T::Context>, T) {
+    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
+        DelayedResult::SyncOk(Some(self))
     }
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, Option<T>, C> for Option<(&'a T::Context, T)> {
-    fn into(self, _: &'a C) -> FieldResult<Option<(&'a T::Context, Option<T>)>> {
-        Ok(self.map(|(ctx, v)| (ctx, Some(v))))
+impl<T: GraphQLType, C> IntoResolvable<Option<T>, C> for Option<(Arc<T::Context>, T)> {
+    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, Option<T>)>> {
+        DelayedResult::SyncOk(self.map(|(ctx, v)| (ctx, Some(v))))
     }
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, T, C> for FieldResult<(&'a T::Context, T)> {
-    fn into(self, _: &'a C) -> FieldResult<Option<(&'a T::Context, T)>> {
-        self.map(Some)
+impl<T: GraphQLType, C> IntoResolvable<T, C> for FieldResult<(Arc<T::Context>, T)> {
+    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, T)>> {
+        DelayedResult::from_sync_result(self.map(Some))
     }
 }
 
-impl<'a, T: GraphQLType, C> IntoResolvable<'a, Option<T>, C> for FieldResult<Option<(&'a T::Context, T)>> {
-    fn into(self, _: &'a C) -> FieldResult<Option<(&'a T::Context, Option<T>)>> {
-        self.map(|o| o.map(|(ctx, v)| (ctx, Some(v))))
+impl<T: GraphQLType, C> IntoResolvable<Option<T>, C> for FieldResult<Option<(Arc<T::Context>, T)>> {
+    fn into(self, _: Arc<C>) -> DelayedFieldResult<Option<(Arc<T::Context>, Option<T>)>> {
+        DelayedResult::from_sync_result(self.map(|o| o.map(|(ctx, v)| (ctx, Some(v)))))
     }
 }
 
@@ -231,7 +250,7 @@ impl<'a, T: GraphQLType, C> IntoResolvable<'a, Option<T>, C> for FieldResult<Opt
 /// work, e.g. scalars or enums.
 pub trait FromContext<T> {
     /// Perform the conversion
-    fn from(value: &T) -> &Self;
+    fn from(value: Arc<T>) -> Arc<Self>;
 }
 
 /// Marker trait for types that can act as context objects for GraphQL types.
@@ -239,11 +258,9 @@ pub trait Context {}
 
 impl<'a, C: Context> Context for &'a C {}
 
-static NULL_CONTEXT: () = ();
-
 impl<T> FromContext<T> for () {
-    fn from(_: &T) -> &Self {
-        &NULL_CONTEXT
+    fn from(_: Arc<T>) -> Arc<Self> {
+        Arc::new(())
     }
 }
 
@@ -251,14 +268,14 @@ impl<T> FromContext<T> for T
 where
     T: Context,
 {
-    fn from(value: &T) -> &Self {
+    fn from(value: Arc<T>) -> Arc<Self> {
         value
     }
 }
 
-impl<'a, CtxT> Executor<'a, CtxT> {
+impl<CtxT> Executor<CtxT> {
     /// Resolve a single arbitrary value, mapping the context to a new type
-    pub fn resolve_with_ctx<NewCtxT, T: GraphQLType<Context = NewCtxT>>(
+    pub fn resolve_with_ctx<NewCtxT: 'static, T: GraphQLType<Context = NewCtxT>>(
         &self,
         info: &T::TypeInfo,
         value: &T,
@@ -266,33 +283,37 @@ impl<'a, CtxT> Executor<'a, CtxT> {
     where
         NewCtxT: FromContext<CtxT>,
     {
-        self.replaced_context(<NewCtxT as FromContext<CtxT>>::from(self.context))
-            .resolve(info, value)
+        Executor::resolve(
+            self.replaced_context(<NewCtxT as FromContext<CtxT>>::from(self.context.clone())),
+            info, value
+        )
     }
 
     /// Resolve a single arbitrary value into an `ExecutionResult`
     pub fn resolve<T: GraphQLType<Context = CtxT>>(
-        &self,
+        this: Arc<Self>,
         info: &T::TypeInfo,
         value: &T,
     ) -> ExecutionResult {
-        Ok(value.resolve(info, self.current_selection_set, self))
+        DelayedResult::SyncOk(value.resolve(info, this.current_selection_set.as_ref(), this.clone()))
     }
 
     /// Resolve a single arbitrary value into a return value
     ///
     /// If the field fails to resolve, `null` will be returned.
     pub fn resolve_into_value<T: GraphQLType<Context = CtxT>>(
-        &self,
+        this: Arc<Self>,
         info: &T::TypeInfo,
         value: &T,
     ) -> Value {
-        match self.resolve(info, value) {
-            Ok(v) => v,
-            Err(e) => {
-                self.push_error(e);
+        
+        match Executor::resolve(this.clone(), info, value) {
+            DelayedResult::SyncOk(v) => v,
+            DelayedResult::SyncErr(e) => {
+                this.push_error(e);
                 Value::null()
-            }
+            },
+            DelayedResult::Async(_) => unimplemented!("MH: FIXME ASYNC")
         }
     }
 
@@ -300,16 +321,16 @@ impl<'a, CtxT> Executor<'a, CtxT> {
     ///
     /// This can be used to connect different types, e.g. from different Rust
     /// libraries, that require different context types.
-    pub fn replaced_context<'b, NewCtxT>(&'b self, ctx: &'b NewCtxT) -> Executor<'b, NewCtxT> {
-        Executor {
-            fragments: self.fragments,
-            variables: self.variables,
-            current_selection_set: self.current_selection_set,
-            schema: self.schema,
+    pub fn replaced_context<NewCtxT: 'static>(&self, ctx: Arc<NewCtxT>) -> Arc<Executor<NewCtxT>> {
+        Arc::new(Executor {
+            fragments: self.fragments.clone(),
+            variables: self.variables.clone(),
+            current_selection_set: self.current_selection_set.clone(),
+            schema: self.schema.clone(),
             context: ctx,
-            errors: self.errors,
+            errors: self.errors.clone(),
             field_path: self.field_path.clone(),
-        }
+        })
     }
 
     #[doc(hidden)]
@@ -317,43 +338,47 @@ impl<'a, CtxT> Executor<'a, CtxT> {
         &self,
         field_name: Option<SharedStr>,
         location: SourcePosition,
-        selection_set: Option<&'a [Selection]>,
-    ) -> Executor<CtxT> {
-        Executor {
-            fragments: self.fragments,
-            variables: self.variables,
+        selection_set: Option<Arc<Vec<Selection>>>,
+    ) -> Arc<Executor<CtxT>> {
+        Arc::new(Executor {
+            fragments: self.fragments.clone(),
+            variables: self.variables.clone(),
             current_selection_set: selection_set,
-            schema: self.schema,
-            context: self.context,
-            errors: self.errors,
+            schema: self.schema.clone(),
+            context: self.context.clone(),
+            errors: self.errors.clone(),
             field_path: match field_name {
-                Some(name) => FieldPath::Field(name, location, &self.field_path),
+                Some(name) => Arc::new(FieldPath::Field(name, location, self.field_path.clone())),
                 None => self.field_path.clone(),
             },
-        }
+        })
     }
 
     /// Access the current context
     ///
     /// You usually provide the context when calling the top-level `execute`
     /// function, or using the context factory in the Iron integration.
-    pub fn context(&self) -> &'a CtxT {
-        self.context
+    pub fn context(&self) -> &CtxT {
+        &self.context
+    }
+
+    pub fn arc_context(&self) -> Arc<CtxT> {
+        self.context.clone()
     }
 
     /// The currently executing schema
-    pub fn schema(&self) -> &'a SchemaType {
-        self.schema
+    pub fn schema(&self) -> &SchemaType {
+        &self.schema
     }
 
     #[doc(hidden)]
-    pub fn variables(&self) -> &'a Variables {
-        self.variables
+    pub fn variables(&self) -> &Variables {
+        &self.variables
     }
 
     #[doc(hidden)]
-    pub fn fragment_by_name(&self, name: &str) -> Option<&'a Fragment> {
-        self.fragments.get(name).map(|f| *f)
+    pub fn fragment_by_name(&self, name: &str) -> Option<&Fragment> {
+        self.fragments.get(name).map(|f| f.as_ref())
     }
 
     /// The current location of the executor
@@ -382,11 +407,11 @@ impl<'a, CtxT> Executor<'a, CtxT> {
     }
 }
 
-impl<'a> FieldPath<'a> {
+impl FieldPath {
     fn construct_path(&self, acc: &mut Vec<String>) {
         match *self {
             FieldPath::Root(_) => (),
-            FieldPath::Field(ref name, _, parent) => {
+            FieldPath::Field(ref name, _, ref parent) => {
                 parent.construct_path(acc);
                 acc.push(name.to_string());
             }
@@ -426,12 +451,12 @@ impl ExecutionError {
     }
 }
 
-pub fn execute_validated_query<'a, QueryT, MutationT, CtxT>(
+pub fn execute_validated_query<QueryT, MutationT, CtxT: 'static>(
     document: Document,
     operation_name: Option<&str>,
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
-    context: &CtxT,
+    context: Arc<CtxT>,
 ) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
 where
     QueryT: GraphQLType<Context = CtxT>,
@@ -475,7 +500,7 @@ where
             .collect::<HashMap<String, InputValue>>()
     });
 
-    let errors = RwLock::new(Vec::new());
+    let errors = Arc::new(RwLock::new(Vec::new()));
     let value;
 
     {
@@ -492,28 +517,28 @@ where
             final_vars = &all_vars;
         }
 
-        let executor = Executor {
-            fragments: &fragments
+        let executor = Arc::new(Executor {
+            fragments: Arc::new(fragments
                 .iter()
-                .map(|f| (f.item.name.item.clone(), &f.item))
-                .collect(),
-            variables: final_vars,
-            current_selection_set: Some(&op.item.selection_set[..]),
-            schema: &root_node.schema,
+                .map(|f| (f.item.name.item.clone(), Arc::new(f.item.clone())))
+                .collect()),
+            variables: Arc::new(final_vars.clone()),
+            current_selection_set: Some(Arc::new(op.item.selection_set[..].to_vec())),
+            schema: root_node.schema.clone(),
             context: context,
-            errors: &errors,
-            field_path: FieldPath::Root(op.start),
-        };
+            errors: errors.clone(),
+            field_path: Arc::new(FieldPath::Root(op.start)),
+        });
 
         value = match op.item.operation_type {
-            OperationType::Query => executor.resolve_into_value(&root_node.query_info, &root_node),
+            OperationType::Query => Executor::resolve_into_value(executor, &root_node.query_info, &root_node),
             OperationType::Mutation => {
-                executor.resolve_into_value(&root_node.mutation_info, &root_node.mutation_type)
+                Executor::resolve_into_value(executor, &root_node.mutation_info, &root_node.mutation_type)
             }
         };
     }
 
-    let mut errors = errors.into_inner().unwrap();
+    let mut errors = Arc::try_unwrap(errors).unwrap().into_inner().unwrap();
     errors.sort();
 
     Ok((value, errors))
@@ -564,7 +589,7 @@ impl Registry {
     }
 
     #[doc(hidden)]
-    pub fn field_convert<'a, T: IntoResolvable<'a, I, C>, I, C>(
+    pub fn field_convert<T: IntoResolvable<I, C>, I, C>(
         &mut self,
         name: &str,
         info: &I::TypeInfo,

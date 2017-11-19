@@ -130,11 +130,11 @@ mod tests {
     use super::{error_message, factory};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn single_reference_is_valid() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB }
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn spreading_twice_is_not_circular() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB, ...fragB }
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn spreading_twice_indirectly_is_not_circular() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB, ...fragC }
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn double_spread_within_abstract_types() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment nameFragment on Pet {
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn does_not_false_positive_on_unknown_fragment() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment nameFragment on Pet {
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn spreading_recursively_within_field_fails() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Human { relatives { ...fragA } },
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_directly() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragA }
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_directly_within_inline_fragment() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Pet {
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_indirectly() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB }
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_indirectly_reports_opposite_order() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragB on Dog { ...fragA }
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_indirectly_within_inline_fragment() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Pet {
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_deeply() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB }
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_deeply_two_paths() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB, ...fragC }
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_deeply_two_paths_alt_traversal_order() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragC }
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn no_spreading_itself_deeply_and_immediately() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment fragA on Dog { ...fragB }

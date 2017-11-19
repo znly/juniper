@@ -104,11 +104,11 @@ mod tests {
     use super::{directive_error_message, factory, field_error_message};
 
     use parser::SourcePosition;
-    use validation::{expect_fails_rule, expect_passes_rule, RuleError};
+    use validation::RuleError;
 
     #[test]
     fn single_arg_is_known() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment argOnRequiredArg on Dog {
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn multiple_args_are_known() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment multipleArgs on ComplicatedArgs {
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn ignores_args_of_unknown_fields() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment argOnUnknownField on Dog {
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn multiple_args_in_reverse_order_are_known() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment multipleArgsReverseOrder on ComplicatedArgs {
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn no_args_on_optional_arg() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           fragment noArgOnOptionalArg on Dog {
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn args_are_known_deeply() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn directive_args_are_known() {
-        expect_passes_rule(
+        expect_passes_rule!(
             factory,
             r#"
           {
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn undirective_args_are_invalid() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn invalid_arg_name() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment invalidArgName on Dog {
@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn unknown_args_amongst_known_args() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           fragment oneGoodArgOneInvalidArg on Dog {
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn unknown_args_deeply() {
-        expect_fails_rule(
+        expect_fails_rule!(
             factory,
             r#"
           {

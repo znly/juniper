@@ -1,6 +1,7 @@
 use std::convert::From;
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use ast::{FromInputValue, InputValue, Selection, ToInputValue};
 use value::Value;
@@ -71,7 +72,7 @@ impl<'a> GraphQLType for &'a str {
         registry.build_scalar_type::<String>(&()).into_meta()
     }
 
-    fn resolve(&self, _: &(), _: Option<&[Selection]>, _: &Executor<Self::Context>) -> Value {
+    fn resolve(&self, _: &(), _: Option<&Arc<Vec<Selection>>>, _: Arc<Executor<Self::Context>>) -> Value {
         Value::string(self)
     }
 }
