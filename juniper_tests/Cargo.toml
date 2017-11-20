@@ -9,6 +9,7 @@ serde_json = { version = "^1.0.2" }
 
 [dev-dependencies]
 fnv = "1.0.3"
+futures = "0.1.17"
 
 [[test]]
 name = "integration_tests"

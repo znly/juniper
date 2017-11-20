@@ -103,7 +103,7 @@ mod interface {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -221,7 +221,7 @@ mod union {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 

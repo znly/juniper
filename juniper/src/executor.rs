@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use fnv::FnvHashMap;
-use futures::Future;
+use futures::{future, Future};
 
 use GraphQLError;
 use ast::{Definition, Document, Fragment, FromInputValue, InputValue, OperationType, Selection,
@@ -520,7 +520,7 @@ pub fn execute_validated_query<QueryT, MutationT, CtxT: 'static>(
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
     context: Arc<CtxT>,
-) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
+) -> Box<Future<Item=(Value, Vec<ExecutionError>), Error=GraphQLError>>
 where
     QueryT: GraphQLType<Context = CtxT>,
     MutationT: GraphQLType<Context = CtxT>,
@@ -532,7 +532,7 @@ where
         match def {
             Definition::Operation(op) => {
                 if operation_name.is_none() && operation.is_some() {
-                    return Err(GraphQLError::MultipleOperationsProvided);
+                    return Box::new(future::err(GraphQLError::MultipleOperationsProvided));
                 }
 
                 let move_op = operation_name.is_none() ||
@@ -548,7 +548,7 @@ where
 
     let op = match operation {
         Some(op) => op,
-        None => return Err(GraphQLError::UnknownOperationName),
+        None => return Box::new(future::err(GraphQLError::UnknownOperationName)),
     };
 
     let default_variable_values = op.item.variable_definitions.map(|defs| {
@@ -605,8 +605,8 @@ where
     errors.sort();
 
     match value {
-        DelayedResult::Sync(SyncResult::Ok(v)) => Ok((v, errors)),
-        DelayedResult::Sync(SyncResult::Err(_)) => Ok((Value::null(), errors)),
+        DelayedResult::Sync(SyncResult::Ok(v)) => Box::new(future::ok((v, errors))),
+        DelayedResult::Sync(SyncResult::Err(_)) => Box::new(future::ok((Value::null(), errors))),
         DelayedResult::Async(_) => unimplemented!(), // MH: FIXME ASYNC
     }
 }

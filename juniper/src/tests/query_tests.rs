@@ -17,7 +17,7 @@ fn test_hero_name() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -46,7 +46,7 @@ fn test_hero_field_order() {
             }
         }"#;
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -75,7 +75,7 @@ fn test_hero_field_order() {
             }
         }"#;
     assert_eq!(
-        ::execute(doc_reversed, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc_reversed, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -113,7 +113,7 @@ fn test_hero_name_and_friends() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -175,7 +175,7 @@ fn test_hero_name_and_friends_and_friends_of_friends() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -339,7 +339,7 @@ fn test_query_name() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -366,7 +366,7 @@ fn test_query_alias_single() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -397,7 +397,7 @@ fn test_query_alias_multiple() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -441,7 +441,7 @@ fn test_query_alias_multiple_with_fragment() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -484,7 +484,7 @@ fn test_query_name_variable() {
         .collect();
 
     assert_eq!(
-        ::execute(doc, None, &schema, &vars, database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &vars, database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -515,7 +515,7 @@ fn test_query_name_invalid_variable() {
         .collect();
 
     assert_eq!(
-        ::execute(doc, None, &schema, &vars, database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &vars, database.clone())),
         Ok((
             Value::object(vec![("human", Value::null())].into_iter().collect()),
             vec![]
@@ -530,7 +530,7 @@ fn test_query_friends_names() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -593,7 +593,7 @@ fn test_query_inline_fragments_droid() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -630,7 +630,7 @@ fn test_query_inline_fragments_human() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![
@@ -664,7 +664,7 @@ fn test_object_typename() {
     let schema = RootNode::new(database.as_ref(), EmptyMutation::<Database>::new());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), database.clone()),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), database.clone())),
         Ok((
             Value::object(
                 vec![

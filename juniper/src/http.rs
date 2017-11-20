@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use serde::ser;
 use serde::ser::SerializeMap;
+use futures::Future;
 
 use {GraphQLError, GraphQLType, RootNode, Value, Variables};
 use ast::InputValue;
@@ -63,18 +64,18 @@ impl GraphQLRequest {
         &self,
         root_node: &RootNode<QueryT, MutationT>,
         context: Arc<CtxT>,
-    ) -> GraphQLResponse
+    ) -> Box<Future<Item=GraphQLResponse, Error=()>>
     where
         QueryT: GraphQLType<Context = CtxT>,
         MutationT: GraphQLType<Context = CtxT>,
     {
-        GraphQLResponse(::execute(
+        Box::new(::execute(
             &self.query,
             self.operation_name(),
             root_node,
             &self.variables(),
             context,
-        ))
+        ).then(|r| Ok(GraphQLResponse(r))))
     }
 }
 

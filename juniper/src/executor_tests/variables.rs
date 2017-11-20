@@ -126,7 +126,7 @@ where
 {
     let schema = RootNode::new(TestType, EmptyMutation::<()>::new());
 
-    let (result, errs) = ::execute(query, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+    let (result, errs) = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
     assert_eq!(errs, []);
 
@@ -244,7 +244,7 @@ fn variable_error_on_nested_non_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -264,7 +264,7 @@ fn variable_error_on_incorrect_type() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -287,7 +287,7 @@ fn variable_error_on_omit_non_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -312,7 +312,7 @@ fn variable_multiple_errors_with_nesting() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -341,7 +341,7 @@ fn variable_error_on_additional_field() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -429,7 +429,7 @@ fn does_not_allow_non_nullable_input_to_be_omitted_in_variable() {
     let query = r#"query q($value: String!) { fieldWithNonNullableStringInput(input: $value) }"#;
     let vars = vec![].into_iter().collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -449,7 +449,7 @@ fn does_not_allow_non_nullable_input_to_be_set_to_null_in_variable() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -549,7 +549,7 @@ fn does_not_allow_non_null_lists_to_be_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -640,7 +640,7 @@ fn does_not_allow_lists_of_non_null_to_contain_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -664,7 +664,7 @@ fn does_not_allow_non_null_lists_of_non_null_to_contain_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -684,7 +684,7 @@ fn does_not_allow_non_null_lists_of_non_null_to_be_null() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -724,7 +724,7 @@ fn does_not_allow_invalid_types_to_be_used_as_values() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -747,7 +747,7 @@ fn does_not_allow_unknown_types_to_be_used_as_values() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -847,7 +847,7 @@ fn does_not_allow_missing_required_field() {
     let query = r#"{ exampleInput(arg: {a: "abc"}) }"#;
     let vars = vec![].into_iter().collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -864,7 +864,7 @@ fn does_not_allow_null_in_required_field() {
     let query = r#"{ exampleInput(arg: {a: "abc", b: null}) }"#;
     let vars = vec![].into_iter().collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -881,7 +881,7 @@ fn does_not_allow_missing_variable_for_required_field() {
     let query = r#"query q($var: Int!) { exampleInput(arg: {b: $var}) }"#;
     let vars = vec![].into_iter().collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -901,7 +901,7 @@ fn does_not_allow_null_variable_for_required_field() {
     ].into_iter()
         .collect();
 
-    let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+    let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
     assert_eq!(error, ValidationError(vec![
         RuleError::new(
@@ -995,7 +995,7 @@ mod integers {
         ].into_iter()
             .collect();
 
-        let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+        let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
         assert_eq!(error, ValidationError(vec![
             RuleError::new(
@@ -1015,7 +1015,7 @@ mod integers {
         ].into_iter()
             .collect();
 
-        let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+        let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
         assert_eq!(error, ValidationError(vec![
             RuleError::new(
@@ -1072,7 +1072,7 @@ mod floats {
         ].into_iter()
             .collect();
 
-        let error = ::execute(query, None, &schema, &vars, Arc::new(())).unwrap_err();
+        let error = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
         assert_eq!(error, ValidationError(vec![
             RuleError::new(

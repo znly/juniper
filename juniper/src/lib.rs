@@ -202,19 +202,22 @@ pub fn execute<CtxT: 'static, QueryT, MutationT>(
     root_node: &RootNode<QueryT, MutationT>,
     variables: &Variables,
     context: Arc<CtxT>,
-) -> Result<(Value, Vec<ExecutionError>), GraphQLError>
+) -> Box<futures::Future<Item=(Value, Vec<ExecutionError>), Error=GraphQLError>>
 where
     QueryT: GraphQLType<Context = CtxT>,
     MutationT: GraphQLType<Context = CtxT>,
 {
     let source = shared_str::SharedStr::clone_from_str(document_source);
-    let document = try!(parse_document_source(source));
+    let document = match parse_document_source(source) {
+        Ok(d) => d,
+        Err(e) => return Box::new(futures::future::err(e.into()))
+    };
 
     {
         let errors = validate_input_values(variables, &document, &root_node.schema);
 
         if !errors.is_empty() {
-            return Err(GraphQLError::ValidationError(errors));
+            return Box::new(futures::future::err(GraphQLError::ValidationError(errors)));
         }
     }
 
@@ -224,7 +227,7 @@ where
 
         let errors = ctx.into_errors();
         if !errors.is_empty() {
-            return Err(GraphQLError::ValidationError(errors));
+            return Box::new(futures::future::err(GraphQLError::ValidationError(errors)));
         }
     }
 

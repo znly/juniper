@@ -68,7 +68,7 @@ mod field_execution {
         ].into_iter()
             .collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -141,7 +141,7 @@ mod merge_parallel_fragments {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -192,7 +192,7 @@ mod threads_context_correctly {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(
+        let (result, errs) = ::tests::get_immediate(::execute(
             doc,
             None,
             &schema,
@@ -200,7 +200,7 @@ mod threads_context_correctly {
             Arc::new(TestContext {
                 value: "Context value".to_owned(),
             }),
-        ).expect("Execution failed");
+        )).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -288,7 +288,7 @@ mod dynamic_context_switching {
                 .collect(),
         });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, ctx)).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -323,7 +323,7 @@ mod dynamic_context_switching {
                 .collect(),
         });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, ctx)).expect("Execution failed");
 
         assert_eq!(errs, vec![]);
 
@@ -357,7 +357,7 @@ mod dynamic_context_switching {
                 .collect(),
         });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, ctx)).expect("Execution failed");
 
         assert_eq!(errs, vec![
             ExecutionError::new(
@@ -393,7 +393,7 @@ mod dynamic_context_switching {
                 .collect(),
         });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, ctx)).expect("Execution failed");
 
         assert_eq!(errs, [
             ExecutionError::new(
@@ -431,7 +431,7 @@ mod dynamic_context_switching {
                 .collect(),
         });
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, ctx).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, ctx)).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -477,7 +477,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -503,7 +503,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -529,7 +529,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -555,7 +555,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -581,7 +581,7 @@ mod propagates_errors_to_nullable_fields {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         println!("Result: {:?}", result);
 
@@ -622,7 +622,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -640,7 +640,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+        let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -659,7 +659,7 @@ mod named_operations {
         let vars = vec![].into_iter().collect();
 
         let (result, errs) =
-            ::execute(doc, Some("OtherExample"), &schema, &vars, Arc::new(())).expect("Execution failed");
+            ::tests::get_immediate(::execute(doc, Some("OtherExample"), &schema, &vars, Arc::new(()))).expect("Execution failed");
 
         assert_eq!(errs, []);
 
@@ -677,7 +677,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let err = ::execute(doc, None, &schema, &vars, Arc::new(())).unwrap_err();
+        let err = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(()))).unwrap_err();
 
         assert_eq!(err, GraphQLError::MultipleOperationsProvided);
     }
@@ -689,7 +689,7 @@ mod named_operations {
 
         let vars = vec![].into_iter().collect();
 
-        let err = ::execute(doc, Some("UnknownExample"), &schema, &vars, Arc::new(())).unwrap_err();
+        let err = ::tests::get_immediate(::execute(doc, Some("UnknownExample"), &schema, &vars, Arc::new(()))).unwrap_err();
 
         assert_eq!(err, GraphQLError::UnknownOperationName);
     }

@@ -171,7 +171,7 @@ where
     ].into_iter()
         .collect();
 
-    let (result, errs) = ::execute(doc, None, &schema, &vars, Arc::new(InnerContext)).expect("Execution failed");
+    let (result, errs) = ::tests::get_immediate(::execute(doc, None, &schema, &vars, Arc::new(InnerContext))).expect("Execution failed");
 
     assert_eq!(errs, []);
 

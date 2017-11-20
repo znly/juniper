@@ -48,7 +48,7 @@ fn test_derived_object() {
     let schema = RootNode::new(Query, EmptyMutation::<()>::new());
 
     assert_eq!(
-    execute(doc, None, &schema, &Variables::new(), Arc::new(())),
+    ::get_immediate(execute(doc, None, &schema, &Variables::new(), Arc::new(()))),
     Ok((Value::object(vec![
       ("obj", Value::object(vec![
         ("regularField", Value::boolean(true)),

@@ -25,7 +25,7 @@ where
 {
     let schema = RootNode::new(TestType, EmptyMutation::<()>::new());
 
-    let (result, errs) = ::execute(query, None, &schema, &vars, Arc::new(())).expect("Execution failed");
+    let (result, errs) = ::tests::get_immediate(::execute(query, None, &schema, &vars, Arc::new(()))).expect("Execution failed");
 
     assert_eq!(errs, []);
 

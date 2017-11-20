@@ -69,7 +69,7 @@ fn test_node() {
     let schema = RootNode::new_with_info(node, EmptyMutation::new(), node_info, ());
 
     assert_eq!(
-        ::execute(doc, None, &schema, &Variables::new(), Arc::new(())),
+        ::tests::get_immediate(::execute(doc, None, &schema, &Variables::new(), Arc::new(()))),
         Ok((
             Value::object(
                 vec![
