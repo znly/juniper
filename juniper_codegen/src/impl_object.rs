@@ -202,6 +202,7 @@ pub fn build_object(args: TokenStream, body: TokenStream, is_internal: bool) -> 
                     resolver_code,
                     is_type_inferred: false,
                     is_async,
+                    is_crossedge: attrs.is_crossedge,
                 });
             }
             _ => {
