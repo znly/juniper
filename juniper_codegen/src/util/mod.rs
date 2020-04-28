@@ -462,6 +462,7 @@ enum FieldAttribute {
     Skip(syn::Ident),
     Arguments(HashMap<String, FieldAttributeArgument>),
     CrossEdge,
+    Features(Vec<String>),
 }
 
 impl parse::Parse for FieldAttribute {
@@ -511,6 +512,23 @@ impl parse::Parse for FieldAttribute {
                 Ok(FieldAttribute::Arguments(map))
             }
             "crossedge" => Ok(FieldAttribute::CrossEdge),
+            "feature" => {
+                let features = if input.peek(Token![=]) {
+                    input.parse::<Token![=]>()?;
+                    input
+                        .parse::<syn::LitStr>()?
+                        .value()
+                        .to_string()
+                        .split(',')
+                        .into_iter()
+                        .map(|s| s.trim().to_string())
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+
+                Ok(FieldAttribute::Features(features))
+            }
             other => Err(input.error(format!("Unknown attribute: {}", other))),
         }
     }
@@ -526,6 +544,7 @@ pub struct FieldAttributes {
     /// Only relevant for object macro.
     pub arguments: HashMap<String, FieldAttributeArgument>,
     pub is_crossedge: bool,
+    pub features: Vec<String>,
 }
 
 impl parse::Parse for FieldAttributes {
@@ -539,6 +558,7 @@ impl parse::Parse for FieldAttributes {
             skip: false,
             arguments: Default::default(),
             is_crossedge: false,
+            features: Vec::new(),
         };
 
         for item in items {
@@ -560,6 +580,9 @@ impl parse::Parse for FieldAttributes {
                 }
                 FieldAttribute::CrossEdge => {
                     output.is_crossedge = true;
+                }
+                FieldAttribute::Features(features) => {
+                    output.features = features;
                 }
             }
         }
@@ -622,6 +645,7 @@ pub struct GraphQLTypeDefinitionField {
     pub is_type_inferred: bool,
     pub is_async: bool,
     pub is_crossedge: bool,
+    pub features: Vec<String>,
 }
 
 pub fn unraw(s: &str) -> String {
@@ -752,7 +776,7 @@ impl GraphQLTypeDefiniton {
 
         let resolve_matches = self.fields.iter().map(|field| {
             let name = &field.name;
-            let code = &field.resolver_code;
+            let code = field.resolver_code_with_features();
 
             if field.is_async {
                 quote!(
@@ -831,7 +855,7 @@ impl GraphQLTypeDefiniton {
         let resolve_field_async = {
             let resolve_matches_async = self.fields.iter().map(|field| {
                 let name = &field.name;
-                let code = &field.resolver_code;
+                let code = field.resolver_code_with_features();
                 let _type = if field.is_type_inferred {
                     quote!()
                 } else {
@@ -891,7 +915,6 @@ impl GraphQLTypeDefiniton {
                             future::FutureExt::boxed(future::ready(v))
                         )
                     };
-
                     quote!(
                         #name => {
                             let res #_type = (||{ #code })();
@@ -1134,7 +1157,7 @@ impl GraphQLTypeDefiniton {
             .filter(|field| field.is_async)
             .map(|field| {
                 let name = &field.name;
-                let code = &field.resolver_code;
+                let code = field.resolver_code_with_features();
 
                 let _type;
                 if field.is_type_inferred {
@@ -1175,7 +1198,6 @@ impl GraphQLTypeDefiniton {
                         })
                     }
                 )
-
             });
 
         let graphql_implementation = quote!(
@@ -1689,6 +1711,34 @@ impl GraphQLTypeDefiniton {
         }
 
         body
+    }
+}
+
+impl GraphQLTypeDefinitionField {
+    fn resolver_code_with_features(&self) -> proc_macro2::TokenStream {
+        if self.features.is_empty() {
+            self.resolver_code.clone()
+        } else {
+            let features = &self.features;
+            let inner_code = &self.resolver_code;
+            let error_message = format!(
+                "`{}` is only available if the features `{}` are enabled",
+                self.name,
+                features.join(",")
+            );
+            quote!(
+                #[cfg(not(all(#(feature = #features),*)))]
+                {
+                    return Err(anyhow!(
+                    #error_message
+                    )).map_err(std::convert::Into::into);
+                }
+                #[cfg(all(#(feature = #features),*))]
+                {
+                    #inner_code
+                }
+            )
+        }
     }
 }
 
